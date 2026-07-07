@@ -32,7 +32,10 @@ def to_png_pages(data: bytes, mime: str | None = None) -> list[bytes]:
         from pdf2image import convert_from_bytes
 
         try:
-            pages = convert_from_bytes(data, dpi=300, fmt="png")
+            # Render to PPM (poppler's default), NOT PNG: some poppler builds have a
+            # libpng version clash in their PNG writer. Pillow re-encodes to PNG below
+            # using its own bundled libpng, avoiding the system dependency entirely.
+            pages = convert_from_bytes(data, dpi=300)
         except Exception as exc:  # poppler failure / corrupt pdf
             raise ValueError(f"could not render PDF: {exc}") from exc
         result = []

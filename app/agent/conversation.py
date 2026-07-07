@@ -26,8 +26,12 @@ class Attachment:
 
 
 _attachments: ContextVar[dict[str, Attachment]] = ContextVar("attachments", default={})
-_stashed_decision: ContextVar[dict | None] = ContextVar("stashed_decision", default=None)
 _current_conversation_id: ContextVar[str | None] = ContextVar("current_conversation_id", default=None)
+
+# Decisions flow OUT of store_decision (which runs in a Strands worker thread) via a
+# plain module-level dict keyed by conversation_id — a contextvar set inside the tool
+# thread would NOT propagate back to the request handler's context.
+_results: dict[str, dict] = {}
 
 
 def set_attachments(attachments: dict[str, Attachment]):
@@ -46,18 +50,20 @@ def get_current_conversation_id() -> str | None:
     return _current_conversation_id.get()
 
 
-def reset_request_context():
+def reset_request_context(conversation_id: str | None = None):
     _attachments.set({})
-    _stashed_decision.set(None)
     _current_conversation_id.set(None)
+    if conversation_id is not None:
+        _results.pop(conversation_id, None)
 
 
-def stash_decision(decision: dict):
-    _stashed_decision.set(decision)
+def stash_decision(conversation_id: str | None, decision: dict):
+    if conversation_id is not None:
+        _results[conversation_id] = decision
 
 
-def get_stashed_decision() -> dict | None:
-    return _stashed_decision.get()
+def pop_decision(conversation_id: str) -> dict | None:
+    return _results.pop(conversation_id, None)
 
 
 # --------------------------------------------------------------------------- #
@@ -90,3 +96,4 @@ def get_or_create(conversation_id: str) -> _Entry:
 
 def clear_registry():
     _registry.clear()
+    _results.clear()

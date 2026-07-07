@@ -35,6 +35,7 @@ def store_decision(decision: dict) -> dict:
     with session_scope() as session:
         record_id = persist_decision(session, model, conversation_id)
     model.record_id = record_id
-    # Stash for the request handler to build the ChatResponse.
-    conversation.stash_decision(model.model_dump())
+    # Stash for the request handler to build the ChatResponse (keyed by conversation
+    # so it survives the Strands worker-thread boundary).
+    conversation.stash_decision(conversation_id, model.model_dump())
     return {"record_id": record_id}

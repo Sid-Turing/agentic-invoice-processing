@@ -44,7 +44,7 @@ async def chat(
         attachments["po_1"] = await _read_upload(po, "purchase_order")
         attachment_lines.append(f"po=po_1 ({po.content_type or 'unknown'})")
 
-    conversation.reset_request_context()
+    conversation.reset_request_context(conv_id)
     conversation.set_attachments(attachments)
     conversation.set_current_conversation_id(conv_id)
 
@@ -62,7 +62,7 @@ async def chat(
     except Exception as exc:  # provider/DB failure -> transient, retryable
         raise HTTPException(status_code=503, detail=f"transient processing failure: {exc}") from exc
 
-    stashed = conversation.get_stashed_decision()
+    stashed = conversation.pop_decision(conv_id)
     decision = Decision.model_validate(stashed) if stashed else None
 
     return ChatResponse(conversation_id=conv_id, message=str(result), decision=decision)

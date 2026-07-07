@@ -48,7 +48,7 @@ def test_store_decision_returns_record_and_stashes(db_session):
     }
     out = store_decision(decision)
     assert "record_id" in out
-    stashed = conversation.get_stashed_decision()
+    stashed = conversation.pop_decision("conv-1")
     assert stashed["record_id"] == out["record_id"]
     assert stashed["verdict"] == "APPROVED"
 

@@ -67,7 +67,10 @@ WORKFLOW for a processing turn (an invoice is present in this turn or an earlier
    - po_vendor_match: does the invoice vendor match the PO vendor? Give a confidence 0-1; below {s.vendor_match_threshold} is a fail.
    - po_line_items_match: match invoice lines to PO lines tolerant of order/wording; compare quantity (within {s.po_qty_tolerance}), unit price ({s.po_unit_price_tolerance}), total price ({s.po_total_price_tolerance}). Use calculate.
    If no PO was resolved, add both po_* checks as skipped with the reason from step 2.
-5. Verdict: APPROVED only if no check failed; otherwise NEEDS_REVIEW with a reason per failed check.
+5. Verdict: APPROVED if no check has status "fail"; otherwise NEEDS_REVIEW with one reason per failed check.
+   IMPORTANT: a missing or not-found PO is NOT a failure. Record the two po_* checks as "skipped"
+   (never "fail") and do NOT add a reason for the absent PO. Skipped checks never block APPROVED.
+   An invoice with no PO but clean internal checks is APPROVED.
 6. Call store_decision with the full Decision object (verdict, reasons, checks, explanation, extracted_invoice, matched_po with its source). Then reply to the user in plain language summarising the outcome.
 
 NON-PROCESSING turns: If the user only asks a question (e.g. "why did it need review?") or sends no actionable attachment, answer conversationally from context and DO NOT call tools. If input is ambiguous (e.g. two invoices, or an unrelated file), ask a clarifying question instead of guessing. Never fabricate a decision.
