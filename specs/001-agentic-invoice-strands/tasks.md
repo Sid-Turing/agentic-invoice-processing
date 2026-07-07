@@ -28,12 +28,12 @@ CSVs under `data/`.
 
 **Purpose**: Project skeleton, dependencies, config, seed data.
 
-- [ ] T001 Create package structure per plan.md: `app/`, `app/api/`, `app/schemas/`, `app/agent/tools/`, `app/services/`, `app/db/`, `data/`, `tests/unit/`, `tests/integration/`, `tests/fixtures/`, with `__init__.py` files
-- [ ] T002 Author `pyproject.toml`: runtime deps `strands-agents[openai,gemini]`, `fastapi`, `uvicorn[standard]`, `python-multipart`, `sqlalchemy>=2.0`, `psycopg2-binary`, `alembic`, `pdf2image`, `pillow`, `pydantic>=2`, `python-dotenv`; `[dev]` extra `pytest`, `pytest-cov`, `httpx`
-- [ ] T003 [P] Add `.env.example` (OPENAI_API_KEY, GEMINI_API_KEY, OPENAI_MODEL_ID, GEMINI_MODEL_ID, DATABASE_URL, TAX_RATE, SUPPORTED_CURRENCIES, MAX_UPLOAD_MB) and confirm `.gitignore` excludes `.env`
-- [ ] T004 [P] Copy `purchase_orders_data.csv`, `po_vendors_data.csv`, `purchase_order_line_items_data.csv` from the original project root into `data/`
-- [ ] T005 [P] Configure pytest + coverage in `pyproject.toml` (`--cov=app`) and create empty `tests/conftest.py`
-- [ ] T006 Implement `app/config.py`: a settings object reading env (keys, model ids, `DATABASE_URL` default `postgresql+psycopg2://invoice:invoice@localhost:5432/invoices`, `TAX_RATE=0.09125`, tolerances line/total 0.02, PO qty 0.10 / unit 0.05 / total 0.05, vendor-match 0.70, tax-discrepancy 0.25, `SUPPORTED_CURRENCIES=["USD"]`, `MAX_UPLOAD_MB=10`)
+- [x] T001 Create package structure per plan.md: `app/`, `app/api/`, `app/schemas/`, `app/agent/tools/`, `app/services/`, `app/db/`, `data/`, `tests/unit/`, `tests/integration/`, `tests/fixtures/`, with `__init__.py` files
+- [x] T002 Author `pyproject.toml`: runtime deps `strands-agents[openai,gemini]`, `fastapi`, `uvicorn[standard]`, `python-multipart`, `sqlalchemy>=2.0`, `psycopg2-binary`, `alembic`, `pdf2image`, `pillow`, `pydantic>=2`, `python-dotenv`; `[dev]` extra `pytest`, `pytest-cov`, `httpx`
+- [x] T003 [P] Add `.env.example` (OPENAI_API_KEY, GEMINI_API_KEY, OPENAI_MODEL_ID, GEMINI_MODEL_ID, DATABASE_URL, TAX_RATE, SUPPORTED_CURRENCIES, MAX_UPLOAD_MB) and confirm `.gitignore` excludes `.env`
+- [x] T004 [P] Copy `purchase_orders_data.csv`, `po_vendors_data.csv`, `purchase_order_line_items_data.csv` from the original project root into `data/`
+- [x] T005 [P] Configure pytest + coverage in `pyproject.toml` (`--cov=app`) and create empty `tests/conftest.py`
+- [x] T006 Implement `app/config.py`: a settings object reading env (keys, model ids, `DATABASE_URL` default `postgresql+psycopg2://invoice:invoice@localhost:5432/invoices`, `TAX_RATE=0.09125`, tolerances line/total 0.02, PO qty 0.10 / unit 0.05 / total 0.05, vendor-match 0.70, tax-discrepancy 0.25, `SUPPORTED_CURRENCIES=["USD"]`, `MAX_UPLOAD_MB=10`)
 
 **Checkpoint**: `python -c "import app.config"` succeeds; deps install.
 
@@ -48,49 +48,49 @@ scaffold that every user story depends on.
 
 ### Schemas (contracts-first)
 
-- [ ] T007 [P] Write schema tests in `tests/unit/test_schemas.py` (numeric fields default null; `Decision.verdict==APPROVED` iff no `fail` check; `Check.status` enum; `Check.id`/`ReasonCode.code` taxonomy)
-- [ ] T008 [P] Implement `app/schemas/invoice.py` (`VendorInfo`, `CustomerInfo`, `InvoiceLineItem`, `ExtractedInvoice`) per data-model.md
-- [ ] T009 [P] Implement `app/schemas/purchase_order.py` (`POLineItem`, `PurchaseOrder` with `source` literal)
-- [ ] T010 [P] Implement `app/schemas/decision.py` (`Check`, `ReasonCode`, `Decision`)
-- [ ] T011 [P] Implement `app/schemas/chat.py` (`ChatResponse`, `HealthResponse`)
+- [x] T007 [P] Write schema tests in `tests/unit/test_schemas.py` (numeric fields default null; `Decision.verdict==APPROVED` iff no `fail` check; `Check.status` enum; `Check.id`/`ReasonCode.code` taxonomy)
+- [x] T008 [P] Implement `app/schemas/invoice.py` (`VendorInfo`, `CustomerInfo`, `InvoiceLineItem`, `ExtractedInvoice`) per data-model.md
+- [x] T009 [P] Implement `app/schemas/purchase_order.py` (`POLineItem`, `PurchaseOrder` with `source` literal)
+- [x] T010 [P] Implement `app/schemas/decision.py` (`Check`, `ReasonCode`, `Decision`)
+- [x] T011 [P] Implement `app/schemas/chat.py` (`ChatResponse`, `HealthResponse`)
 
 ### Persistence
 
-- [ ] T012 Write repository tests in `tests/unit/test_repository.py` against in-memory SQLite: `get_purchase_order_by_number` (found/not found), `upsert_purchase_order` (create + update-by-number + line-item replace), `persist_decision` (returns record_id), and the no-delete / upsert-only invariant
-- [ ] T013 Implement `app/db/database.py` (SQLAlchemy 2.0 engine + session factory from `DATABASE_URL`; `get_session` dependency)
-- [ ] T014 Implement `app/db/models.py` ORM (dialect-portable types — `JSON` not `JSONB`, string UUIDs, `Numeric`): `PoVendor`, `PurchaseOrder` (unique `po_number`), `PoLineItem`, `ProcessedInvoice` per data-model.md
-- [ ] T014a Initialize Alembic: `alembic.ini` (repo root) + `alembic/env.py` reading `DATABASE_URL` and the app models' `metadata` (so migrations and autogenerate see the ORM)
-- [ ] T014b Author the initial migration `alembic/versions/0001_initial.py` creating all four tables from scratch (upgrade creates, downgrade drops); verify `alembic upgrade head` builds the schema on an empty Postgres
-- [ ] T015 Implement `app/db/repository.py`: `get_purchase_order_by_number`, `upsert_purchase_order`, `persist_decision` (pure data-access; make tests T012 pass)
-- [ ] T016 [P] Write seed test in `tests/unit/test_seed.py` (loads 2 vendors / 2 POs / 15 line items; second call is a no-op — skip-if-exists)
-- [ ] T017 Implement `app/db/seed.py` `seed_reference_data(session, data_dir)` using stdlib `csv`, skip-if-rows-exist (runs after migrations, on startup)
+- [x] T012 Write repository tests in `tests/unit/test_repository.py` against in-memory SQLite: `get_purchase_order_by_number` (found/not found), `upsert_purchase_order` (create + update-by-number + line-item replace), `persist_decision` (returns record_id), and the no-delete / upsert-only invariant
+- [x] T013 Implement `app/db/database.py` (SQLAlchemy 2.0 engine + session factory from `DATABASE_URL`; `get_session` dependency)
+- [x] T014 Implement `app/db/models.py` ORM (dialect-portable types — `JSON` not `JSONB`, string UUIDs, `Numeric`): `PoVendor`, `PurchaseOrder` (unique `po_number`), `PoLineItem`, `ProcessedInvoice` per data-model.md
+- [x] T014a Initialize Alembic: `alembic.ini` (repo root) + `alembic/env.py` reading `DATABASE_URL` and the app models' `metadata` (so migrations and autogenerate see the ORM)
+- [x] T014b Author the initial migration `alembic/versions/0001_initial.py` creating all four tables from scratch (upgrade creates, downgrade drops); verify `alembic upgrade head` builds the schema on an empty Postgres
+- [x] T015 Implement `app/db/repository.py`: `get_purchase_order_by_number`, `upsert_purchase_order`, `persist_decision` (pure data-access; make tests T012 pass)
+- [x] T016 [P] Write seed test in `tests/unit/test_seed.py` (loads 2 vendors / 2 POs / 15 line items; second call is a no-op — skip-if-exists)
+- [x] T017 Implement `app/db/seed.py` `seed_reference_data(session, data_dir)` using stdlib `csv`, skip-if-rows-exist (runs after migrations, on startup)
 
 ### Services (pure/core)
 
-- [ ] T018 [P] Write `tests/unit/test_pdf_service.py` (multi-page PDF → N png byte blobs; oversized page downscaled ≤1600px)
-- [ ] T019 [P] Implement `app/services/pdf_service.py` (`pdf2image` 300 dpi + Pillow downscale → `list[bytes]`)
-- [ ] T020 [P] Write `tests/unit/test_decision_service.py` (verdict-from-checks rule; tolerance comparisons for line math, financial totals, PO qty/price; flat-rate tax expectation)
-- [ ] T021 [P] Implement `app/services/decision_service.py` (pure helpers: `verdict_from_checks`, tolerance comparators, tax expectation — no I/O)
-- [ ] T022 Write `tests/unit/test_extraction_service.py` with a stubbed Gemini client (returns a canned `ExtractedInvoice`/`PurchaseOrder`)
-- [ ] T023 Implement `app/services/extraction_service.py` (`GeminiModel` structured-output call; image content blocks; merge multi-page results) — imports `INVOICE_EXTRACTION_PROMPT` / `PO_EXTRACTION_PROMPT` from `app/agent/prompts.py`, no inline prompt text
+- [x] T018 [P] Write `tests/unit/test_pdf_service.py` (multi-page PDF → N png byte blobs; oversized page downscaled ≤1600px)
+- [x] T019 [P] Implement `app/services/pdf_service.py` (`pdf2image` 300 dpi + Pillow downscale → `list[bytes]`)
+- [x] T020 [P] Write `tests/unit/test_decision_service.py` (verdict-from-checks rule; tolerance comparisons for line math, financial totals, PO qty/price; flat-rate tax expectation)
+- [x] T021 [P] Implement `app/services/decision_service.py` (pure helpers: `verdict_from_checks`, tolerance comparators, tax expectation — no I/O)
+- [x] T022 Write `tests/unit/test_extraction_service.py` with a stubbed Gemini client (returns a canned `ExtractedInvoice`/`PurchaseOrder`)
+- [x] T023 Implement `app/services/extraction_service.py` (`GeminiModel` structured-output call; image content blocks; merge multi-page results) — imports `INVOICE_EXTRACTION_PROMPT` / `PO_EXTRACTION_PROMPT` from `app/agent/prompts.py`, no inline prompt text
 
 ### Tools (Strands `@tool` wrappers)
 
-- [ ] T024 Write `tests/unit/test_tools.py` (calculate safe-eval incl. rejecting names/calls; `lookup_purchase_order` found/not-found; `store_purchase_order` upsert; `store_decision` returns record_id + stashes to contextvar; `extract_document` reads attachment contextvar, routes to extraction_service, returns error dict on unreadable)
-- [ ] T025 [P] Implement `app/agent/tools/math_tool.py` `calculate(expression)` (AST-based safe evaluator)
-- [ ] T026 [P] Implement `app/agent/tools/po_lookup.py` `lookup_purchase_order(po_number)` (opens session, calls repository)
-- [ ] T027 [P] Implement `app/agent/tools/persistence.py` `store_purchase_order(purchase_order)` and `store_decision(decision)` (validate → repository → contextvar stash for the handler)
-- [ ] T028 Implement `app/agent/tools/extraction.py` `extract_document(attachment_id, document_type)` (read bytes from attachment contextvar → `pdf_service` → `extraction_service`; return dict or `{"error","kind"}`)
+- [x] T024 Write `tests/unit/test_tools.py` (calculate safe-eval incl. rejecting names/calls; `lookup_purchase_order` found/not-found; `store_purchase_order` upsert; `store_decision` returns record_id + stashes to contextvar; `extract_document` reads attachment contextvar, routes to extraction_service, returns error dict on unreadable)
+- [x] T025 [P] Implement `app/agent/tools/math_tool.py` `calculate(expression)` (AST-based safe evaluator)
+- [x] T026 [P] Implement `app/agent/tools/po_lookup.py` `lookup_purchase_order(po_number)` (opens session, calls repository)
+- [x] T027 [P] Implement `app/agent/tools/persistence.py` `store_purchase_order(purchase_order)` and `store_decision(decision)` (validate → repository → contextvar stash for the handler)
+- [x] T028 Implement `app/agent/tools/extraction.py` `extract_document(attachment_id, document_type)` (read bytes from attachment contextvar → `pdf_service` → `extraction_service`; return dict or `{"error","kind"}`)
 
 ### Agent + app scaffold
 
-- [ ] T029 Implement `app/agent/conversation.py` (per-`conversation_id` registry `{id: (Agent, Lock)}` with `get_or_create`; request-scoped attachment `contextvar` set/reset helpers)
-- [ ] T030 Implement `app/agent/prompts.py` — the **single home for all prompt text** as named constants: `ORCHESTRATOR_SYSTEM_PROMPT` (role, tool inventory, reason-code taxonomy, tolerances, "call `store_decision` once per processing turn"), `INVOICE_EXTRACTION_PROMPT`, and `PO_EXTRACTION_PROMPT`. (Create before T023, which imports the extraction prompts; the orchestrator/US prompt work in T040/T045/T048 edits `ORCHESTRATOR_SYSTEM_PROMPT` here.)
-- [ ] T031 Implement `app/agent/orchestrator.py` `build_agent(conversation_id)` (`OpenAIModel` + tools + `SlidingWindowConversationManager` + `callback_handler=None`) and an `AGENT_FACTORY` indirection seam for tests
-- [ ] T032 Implement `app/main.py` (FastAPI app; on-startup run `seed_reference_data` — assumes `alembic upgrade head` has created the schema; router registration placeholder)
-- [ ] T033 Write `tests/integration/test_health.py` (TestClient: `GET /health` → 200, providers/database flags, `status` ok/degraded)
-- [ ] T034 Implement `app/api/health.py` `GET /health` → `HealthResponse` (key-configured checks + `SELECT 1`)
-- [ ] T035 Build `tests/conftest.py`: a DB fixture creating the schema via `metadata.create_all` on an in-memory SQLite engine (portable ORM types allow this; a `TEST_DATABASE_URL` env opts into a real Postgres test DB) with per-test transaction rollback + `get_session` override, provider stubs, deterministic **fake agent** wired via `AGENT_FACTORY` (drives real tools in a fixed order), and a `tests/fixtures/` loader
+- [x] T029 Implement `app/agent/conversation.py` (per-`conversation_id` registry `{id: (Agent, Lock)}` with `get_or_create`; request-scoped attachment `contextvar` set/reset helpers)
+- [x] T030 Implement `app/agent/prompts.py` — the **single home for all prompt text** as named constants: `ORCHESTRATOR_SYSTEM_PROMPT` (role, tool inventory, reason-code taxonomy, tolerances, "call `store_decision` once per processing turn"), `INVOICE_EXTRACTION_PROMPT`, and `PO_EXTRACTION_PROMPT`. (Create before T023, which imports the extraction prompts; the orchestrator/US prompt work in T040/T045/T048 edits `ORCHESTRATOR_SYSTEM_PROMPT` here.)
+- [x] T031 Implement `app/agent/orchestrator.py` `build_agent(conversation_id)` (`OpenAIModel` + tools + `SlidingWindowConversationManager` + `callback_handler=None`) and an `AGENT_FACTORY` indirection seam for tests
+- [x] T032 Implement `app/main.py` (FastAPI app; on-startup run `seed_reference_data` — assumes `alembic upgrade head` has created the schema; router registration placeholder)
+- [x] T033 Write `tests/integration/test_health.py` (TestClient: `GET /health` → 200, providers/database flags, `status` ok/degraded)
+- [x] T034 Implement `app/api/health.py` `GET /health` → `HealthResponse` (key-configured checks + `SELECT 1`)
+- [x] T035 Build `tests/conftest.py`: a DB fixture creating the schema via `metadata.create_all` on an in-memory SQLite engine (portable ORM types allow this; a `TEST_DATABASE_URL` env opts into a real Postgres test DB) with per-test transaction rollback + `get_session` override, provider stubs, deterministic **fake agent** wired via `AGENT_FACTORY` (drives real tools in a fixed order), and a `tests/fixtures/` loader
 
 **Checkpoint**: foundational tests (T007, T012, T016, T018, T020, T022, T024, T033) pass; `GET /health` returns `ok`. User-story work can begin.
 
@@ -106,12 +106,12 @@ on file) yields a persisted `APPROVED`/`NEEDS_REVIEW` decision plus a natural-la
 `matched_po.source=="uploaded"` and the PO is now persisted; (c) a tampered total →
 `NEEDS_REVIEW` with the right reason code.
 
-- [ ] T036 [P] [US1] Write `tests/integration/test_chat_po_on_file.py` (invoice with a seeded PO number → APPROVED; tampered financial total → NEEDS_REVIEW `financial_totals`; divergent line item → `po_line_items_match`)
-- [ ] T037 [P] [US1] Write `tests/integration/test_chat_uploaded_po.py` (invoice + PO parts → agent extracts + `store_purchase_order`, `matched_po.source=="uploaded"`; PO retrievable by number afterward)
-- [ ] T038 [P] [US1] Add fixtures in `tests/fixtures/`: invoice referencing PO-54872, a tampered variant, and a matching invoice+PO pair (plus their expected decisions)
-- [ ] T039 [US1] Implement `app/api/chat.py`: parse multipart (`message`, `conversation_id`, `invoice`, `po`), validate size/type (→413/415), assign `attachment_id`s, set the attachment contextvar, compose the user message (text + Attachments list), run one agent turn under the conversation lock via `await agent.invoke_async(...)`, read the stashed `Decision`, return `ChatResponse`
-- [ ] T040 [US1] Extend `app/agent/prompts.py` with the single-turn workflow: extract invoice → resolve PO (uploaded → `extract_document`+`store_purchase_order`; else `lookup_purchase_order` by PO number; else skip w/ reason) → run all invoice-internal checks (using `calculate`) → reconcile vendor + line items within tolerances when a PO is resolved → assemble `Decision` → `store_decision` once
-- [ ] T041 [US1] Register the chat router in `app/main.py` and map transient provider/DB failures to `503` (distinct from NEEDS_REVIEW=200)
+- [x] T036 [P] [US1] Write `tests/integration/test_chat_po_on_file.py` (invoice with a seeded PO number → APPROVED; tampered financial total → NEEDS_REVIEW `financial_totals`; divergent line item → `po_line_items_match`)
+- [x] T037 [P] [US1] Write `tests/integration/test_chat_uploaded_po.py` (invoice + PO parts → agent extracts + `store_purchase_order`, `matched_po.source=="uploaded"`; PO retrievable by number afterward)
+- [x] T038 [P] [US1] Add fixtures in `tests/fixtures/`: invoice referencing PO-54872, a tampered variant, and a matching invoice+PO pair (plus their expected decisions)
+- [x] T039 [US1] Implement `app/api/chat.py`: parse multipart (`message`, `conversation_id`, `invoice`, `po`), validate size/type (→413/415), assign `attachment_id`s, set the attachment contextvar, compose the user message (text + Attachments list), run one agent turn under the conversation lock via `await agent.invoke_async(...)`, read the stashed `Decision`, return `ChatResponse`
+- [x] T040 [US1] Extend `app/agent/prompts.py` with the single-turn workflow: extract invoice → resolve PO (uploaded → `extract_document`+`store_purchase_order`; else `lookup_purchase_order` by PO number; else skip w/ reason) → run all invoice-internal checks (using `calculate`) → reconcile vendor + line items within tolerances when a PO is resolved → assemble `Decision` → `store_decision` once
+- [x] T041 [US1] Register the chat router in `app/main.py` and map transient provider/DB failures to `503` (distinct from NEEDS_REVIEW=200)
 
 **Checkpoint**: US1 tests pass; the MVP is demonstrable end-to-end via quickstart flow 1 & 2.
 
@@ -126,10 +126,10 @@ update the earlier invoice's decision without re-upload; answer follow-ups from 
 the matching PO under the same `conversation_id` → updated decision reconciled
 against the turn-1 invoice; turn 3 plain-text "why?" → explanation, `decision==null`.
 
-- [ ] T042 [P] [US2] Write `tests/integration/test_chat_multiturn.py` (PO-arrives-later reconciles the retained invoice; PO-number-in-text triggers lookup + reconcile)
-- [ ] T043 [P] [US2] Write `tests/integration/test_chat_followup.py` (plain-text "why?" returns an explanation consistent with the prior decision and `decision==null`; same `conversation_id` continuity)
-- [ ] T044 [US2] Verify/adjust `app/agent/conversation.py` so an existing `conversation_id` reuses its Agent (retained `messages`); confirm `SlidingWindowConversationManager` window retains the prior extracted-invoice turn
-- [ ] T045 [US2] Extend `app/agent/prompts.py` with refinement obligations: use retained conversation context, re-reconcile & re-`store_decision` when a PO/number arrives later, and answer follow-up questions without re-invoking extraction
+- [x] T042 [P] [US2] Write `tests/integration/test_chat_multiturn.py` (PO-arrives-later reconciles the retained invoice; PO-number-in-text triggers lookup + reconcile)
+- [x] T043 [P] [US2] Write `tests/integration/test_chat_followup.py` (plain-text "why?" returns an explanation consistent with the prior decision and `decision==null`; same `conversation_id` continuity)
+- [x] T044 [US2] Verify/adjust `app/agent/conversation.py` so an existing `conversation_id` reuses its Agent (retained `messages`); confirm `SlidingWindowConversationManager` window retains the prior extracted-invoice turn
+- [x] T045 [US2] Extend `app/agent/prompts.py` with refinement obligations: use retained conversation context, re-reconcile & re-`store_decision` when a PO/number arrives later, and answer follow-up questions without re-invoking extraction
 
 **Checkpoint**: US1 + US2 tests pass; quickstart flow 3 works.
 
@@ -144,10 +144,10 @@ check-by-check trace and the resolved PO source.
 attachment yields a clarifying question (no fabricated decision); a processing turn's
 `checks[]` lists every check with outcome, compared values, confidence/rationale, and PO source.
 
-- [ ] T046 [P] [US3] Write `tests/integration/test_chat_conversational.py` (greeting → reply, no `store_decision`; ambiguous/unrelated attachment → clarifying question, `decision==null`)
-- [ ] T047 [P] [US3] Write `tests/integration/test_decision_trace.py` (every check present with pass/fail/skipped + `compared`; semantic checks carry `confidence`+`rationale`; skipped reconciliation carries the distinguishing reason; `matched_po.source` set)
-- [ ] T048 [US3] Extend `app/agent/prompts.py` with graceful-handling obligations: ask a clarifying question on ambiguity, never fabricate a decision, don't call tools on non-processing turns, and record skipped-check reasons (`no PO number` vs `PO not found`)
-- [ ] T049 [US3] Ensure `app/services/decision_service.py` / trace assembly emits the full `Check` list (including `skipped` entries with reasons) so US3 trace assertions hold regardless of model phrasing
+- [x] T046 [P] [US3] Write `tests/integration/test_chat_conversational.py` (greeting → reply, no `store_decision`; ambiguous/unrelated attachment → clarifying question, `decision==null`)
+- [x] T047 [P] [US3] Write `tests/integration/test_decision_trace.py` (every check present with pass/fail/skipped + `compared`; semantic checks carry `confidence`+`rationale`; skipped reconciliation carries the distinguishing reason; `matched_po.source` set)
+- [x] T048 [US3] Extend `app/agent/prompts.py` with graceful-handling obligations: ask a clarifying question on ambiguity, never fabricate a decision, don't call tools on non-processing turns, and record skipped-check reasons (`no PO number` vs `PO not found`)
+- [x] T049 [US3] Ensure `app/services/decision_service.py` / trace assembly emits the full `Check` list (including `skipped` entries with reasons) so US3 trace assertions hold regardless of model phrasing
 
 **Checkpoint**: all three stories pass independently and together.
 
@@ -156,10 +156,10 @@ attachment yields a clarifying question (no fabricated decision); a processing t
 ## Phase 6: Polish & Cross-Cutting Concerns
 
 - [ ] T050 [P] Streaming variant (SHOULD, FR-024): add an SSE path to `app/api/chat.py` via `agent.stream_async` (`text/event-stream`, terminal `decision` event) + a streaming test in `tests/integration/test_chat_stream.py`
-- [ ] T051 [P] Write `README.md` (setup incl. `poppler`, run, the three smoke flows) mirroring quickstart.md
-- [ ] T052 [P] Error-handling & logging pass across `app/api/` and tools; confirm no secrets / `*.db` / raw upload bytes are persisted or committed
-- [ ] T053 Coverage validation: `pytest --cov=app --cov-report=term-missing` ≥ 80% on core (`app/db`, `app/services`, `app/agent/tools`, `app/schemas`); document any excluded live-call lines
-- [ ] T054 Final validation (quickstart): `alembic upgrade head` on a fresh Postgres, `python -c "import app.main"`, `uvicorn app.main:app` + `GET /health` = ok (`database: true`), and the three `curl` flows produce the expected decisions
+- [x] T051 [P] Write `README.md` (setup incl. `poppler`, run, the three smoke flows) mirroring quickstart.md
+- [x] T052 [P] Error-handling & logging pass across `app/api/` and tools; confirm no secrets / `*.db` / raw upload bytes are persisted or committed
+- [x] T053 Coverage validation: `pytest --cov=app --cov-report=term-missing` ≥ 80% on core (`app/db`, `app/services`, `app/agent/tools`, `app/schemas`); document any excluded live-call lines
+- [x] T054 Final validation (quickstart): `alembic upgrade head` on a fresh Postgres, `python -c "import app.main"`, `uvicorn app.main:app` + `GET /health` = ok (`database: true`), and the three `curl` flows produce the expected decisions
 
 ---
 

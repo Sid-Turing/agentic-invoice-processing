@@ -1,0 +1,3 @@
+id,name,tax_id,state,street_address,city,zip_code,bank_name,account_number,routing_number,swift_code,tax_classification,tax_exempt,backup_withholding,tax_exemption_number,ifsc_code,created_at,updated_at
+0c045fa0-a264-4534-9378-bf7b96ec815c,MedEquip Diagnostics LLC,12-3456789,CA,"1450 Industrial Rd, Suite 300",San Carlos,94070,,,,,LLC,f,f,,,2025-06-03 18:16:52.155192+00,2025-06-03 18:16:52.155202+00
+b1e2c3d4-e5f6-4789-abcd-123456789abc,TechCore Solutions LLC,,CA,"1450 Industrial Rd, Suite 300",San Carlos,94070-4110,chase bank,12345678,,,LLC,f,f,,,2025-06-03 18:16:52.155+00,2025-06-03 18:16:52.155+00

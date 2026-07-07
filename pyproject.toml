@@ -1,0 +1,40 @@
+[project]
+name = "agentic-invoice-processing"
+version = "0.1.0"
+description = "Agentic invoice processing over a Strands orchestrator agent with a multimodal chat API"
+requires-python = ">=3.11"
+dependencies = [
+    "strands-agents[openai,gemini]>=1.0",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "python-multipart>=0.0.9",
+    "sqlalchemy>=2.0",
+    "psycopg2-binary>=2.9",
+    "alembic>=1.13",
+    "pdf2image>=1.16",
+    "pillow>=10.0",
+    "pydantic>=2.5",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "httpx>=0.27",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=app --cov-report=term-missing"
+
+[tool.coverage.run]
+source = ["app"]
+omit = ["app/__init__.py", "*/__init__.py"]
