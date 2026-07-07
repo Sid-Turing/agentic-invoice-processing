@@ -75,23 +75,33 @@ its extracted data.
 the user asked the agent to use tools). Persisting raw bytes across turns
 (violates SEC-003; unnecessary since extracted JSON is retained).
 
-## R4 — Persistence engine: SQLite + SQLAlchemy 2.0
+## R4 — Persistence engine: PostgreSQL + SQLAlchemy 2.0 + Alembic
 
-**Decision**: **SQLite** (a single file, path from env, default `./invoices.db`)
-accessed through **SQLAlchemy 2.0** ORM. Three read-mostly reference tables
-(`po_vendors`, `purchase_orders`, `purchase_order_line_items`) seeded once from
-the project CSVs, plus one results table (`processed_invoices`). The uploaded-PO
-path upserts the reference tables by PO number.
+**Decision**: **PostgreSQL** accessed through **SQLAlchemy 2.0** (sync engine,
+`psycopg2-binary` driver), with the connection string in `DATABASE_URL` so the
+engine is swappable via env. Schema is created **from scratch by Alembic
+migrations** (`alembic upgrade head`) — one initial migration defines the four
+tables (`po_vendors`, `purchase_orders`, `purchase_order_line_items`,
+`processed_invoices`). After migration, `seed_reference_data` loads the three
+project CSVs into the reference tables (idempotent, skip-if-rows-exist). The
+uploaded-PO path upserts the reference tables by PO number.
 
-**Rationale**: A single-user local service needs zero-infra persistence; SQLite
-is file-based, needs no server, and SQLAlchemy keeps the code portable to
-Postgres later (the original used Postgres + SQLAlchemy, so the ORM models carry
-over almost verbatim). This is the "not unnecessarily complex" choice — drops
-`psycopg2`, the Cloud SQL proxy, and the whole email-queue/status-machine schema.
+**Rationale**: Matches the original app (Postgres + SQLAlchemy), so the ORM models
+and the CSV-shaped schema carry over. `DATABASE_URL` makes the target swappable
+without code changes. Alembic gives a repeatable, reviewable "create tables from
+scratch" path and room for future schema evolution — preferable to
+`metadata.create_all` for anything beyond throwaway setup. **ORM column types are
+kept dialect-portable** (`JSON` not `JSONB`, string UUIDs, `Numeric`) so the same
+models can also run on SQLite in-memory for fast unit tests — the "swappable"
+property in practice.
 
-**Alternatives rejected**: PostgreSQL — real infra for a local single-user tool;
-kept as a documented future swap (change the SQLAlchemy URL). A JSON/file store —
-loses relational PO lookup and upsert-by-number semantics we need.
+**Alternatives rejected**: SQLite as the runtime store — simpler, but the user
+wants Postgres parity with the original and easy env-swap; SQLite is retained only
+as an optional fast test engine via the portable types. `metadata.create_all` as
+the schema source — fine for a demo but gives no migration history; Alembic is the
+small extra that makes schema creation explicit and forward-looking.
+`asyncpg` — the service is low-QPS and the agent loop dominates latency, so a sync
+engine (run in the threadpool where needed) is simpler than going fully async.
 
 ## R5 — Conversation state: per-conversation Agent registry, in-memory
 
@@ -215,11 +225,15 @@ per-conversation Agent, shared client, async invocation, no stdout callback).
 | `pdf2image` (+ system `poppler`) | render PDF pages to images | MIT |
 | `pillow` | image downscale/encode | MIT-CMU (HPND) |
 | `fastapi`, `uvicorn[standard]`, `python-multipart` | chat API + file upload | MIT / BSD |
-| `sqlalchemy` | DB access (SQLite now, Postgres later) | MIT |
+| `sqlalchemy` | DB access (Postgres runtime; portable types allow SQLite in tests) | MIT |
+| `psycopg2-binary` | PostgreSQL driver | LGPL-3.0-with-exceptions (psycopg2 exception permits use; if the LGPL gate is strict, swap to `psycopg[binary]` = LGPL-2.1 or `pg8000` = BSD) |
+| `alembic` | schema migrations (create tables from scratch) | MIT |
 | `pydantic` (transitive) | schemas | MIT |
 | `python-dotenv` | local `.env` loading | BSD |
 | `pytest`, `pytest-cov`, `httpx` (dev) | tests + TestClient | MIT |
 
-No GPL/AGPL/LGPL/SSPL/BUSL. Dropped vs. original: `psycopg2-binary`, `pandas`,
-`numpy`, `pytesseract`, `aiohttp`, `google-cloud-storage` (no GCS — files arrive by
-upload). CSV seeding uses the stdlib `csv` module (no pandas).
+No GPL/AGPL/SSPL/BUSL. `psycopg2-binary` carries the LGPL-with-exception license
+(kept from the original; swap to BSD `pg8000` if a strict LGPL gate applies).
+Dropped vs. original: `pandas`, `numpy`, `pytesseract`, `aiohttp`,
+`google-cloud-storage` (no GCS — files arrive by upload). CSV seeding uses the
+stdlib `csv` module (no pandas).

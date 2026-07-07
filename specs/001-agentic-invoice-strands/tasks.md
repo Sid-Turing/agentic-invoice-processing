@@ -29,11 +29,11 @@ CSVs under `data/`.
 **Purpose**: Project skeleton, dependencies, config, seed data.
 
 - [ ] T001 Create package structure per plan.md: `app/`, `app/api/`, `app/schemas/`, `app/agent/tools/`, `app/services/`, `app/db/`, `data/`, `tests/unit/`, `tests/integration/`, `tests/fixtures/`, with `__init__.py` files
-- [ ] T002 Author `pyproject.toml`: runtime deps `strands-agents[openai,gemini]`, `fastapi`, `uvicorn[standard]`, `python-multipart`, `sqlalchemy>=2.0`, `pdf2image`, `pillow`, `pydantic>=2`, `python-dotenv`; `[dev]` extra `pytest`, `pytest-cov`, `httpx`
-- [ ] T003 [P] Add `.env.example` (OPENAI_API_KEY, GEMINI_API_KEY, OPENAI_MODEL_ID, GEMINI_MODEL_ID, DATABASE_URL, TAX_RATE, SUPPORTED_CURRENCIES, MAX_UPLOAD_MB) and extend `.gitignore` with `*.db` and `.env`
+- [ ] T002 Author `pyproject.toml`: runtime deps `strands-agents[openai,gemini]`, `fastapi`, `uvicorn[standard]`, `python-multipart`, `sqlalchemy>=2.0`, `psycopg2-binary`, `alembic`, `pdf2image`, `pillow`, `pydantic>=2`, `python-dotenv`; `[dev]` extra `pytest`, `pytest-cov`, `httpx`
+- [ ] T003 [P] Add `.env.example` (OPENAI_API_KEY, GEMINI_API_KEY, OPENAI_MODEL_ID, GEMINI_MODEL_ID, DATABASE_URL, TAX_RATE, SUPPORTED_CURRENCIES, MAX_UPLOAD_MB) and confirm `.gitignore` excludes `.env`
 - [ ] T004 [P] Copy `purchase_orders_data.csv`, `po_vendors_data.csv`, `purchase_order_line_items_data.csv` from the original project root into `data/`
 - [ ] T005 [P] Configure pytest + coverage in `pyproject.toml` (`--cov=app`) and create empty `tests/conftest.py`
-- [ ] T006 Implement `app/config.py`: a settings object reading env (keys, model ids, `DATABASE_URL` default `sqlite:///./invoices.db`, `TAX_RATE=0.09125`, tolerances line/total 0.02, PO qty 0.10 / unit 0.05 / total 0.05, vendor-match 0.70, tax-discrepancy 0.25, `SUPPORTED_CURRENCIES=["USD"]`, `MAX_UPLOAD_MB=10`)
+- [ ] T006 Implement `app/config.py`: a settings object reading env (keys, model ids, `DATABASE_URL` default `postgresql+psycopg2://invoice:invoice@localhost:5432/invoices`, `TAX_RATE=0.09125`, tolerances line/total 0.02, PO qty 0.10 / unit 0.05 / total 0.05, vendor-match 0.70, tax-discrepancy 0.25, `SUPPORTED_CURRENCIES=["USD"]`, `MAX_UPLOAD_MB=10`)
 
 **Checkpoint**: `python -c "import app.config"` succeeds; deps install.
 
@@ -58,10 +58,12 @@ scaffold that every user story depends on.
 
 - [ ] T012 Write repository tests in `tests/unit/test_repository.py` against in-memory SQLite: `get_purchase_order_by_number` (found/not found), `upsert_purchase_order` (create + update-by-number + line-item replace), `persist_decision` (returns record_id), and the no-delete / upsert-only invariant
 - [ ] T013 Implement `app/db/database.py` (SQLAlchemy 2.0 engine + session factory from `DATABASE_URL`; `get_session` dependency)
-- [ ] T014 Implement `app/db/models.py` ORM: `PoVendor`, `PurchaseOrder` (unique `po_number`), `PoLineItem`, `ProcessedInvoice` (JSON columns) per data-model.md
+- [ ] T014 Implement `app/db/models.py` ORM (dialect-portable types — `JSON` not `JSONB`, string UUIDs, `Numeric`): `PoVendor`, `PurchaseOrder` (unique `po_number`), `PoLineItem`, `ProcessedInvoice` per data-model.md
+- [ ] T014a Initialize Alembic: `alembic.ini` (repo root) + `alembic/env.py` reading `DATABASE_URL` and the app models' `metadata` (so migrations and autogenerate see the ORM)
+- [ ] T014b Author the initial migration `alembic/versions/0001_initial.py` creating all four tables from scratch (upgrade creates, downgrade drops); verify `alembic upgrade head` builds the schema on an empty Postgres
 - [ ] T015 Implement `app/db/repository.py`: `get_purchase_order_by_number`, `upsert_purchase_order`, `persist_decision` (pure data-access; make tests T012 pass)
 - [ ] T016 [P] Write seed test in `tests/unit/test_seed.py` (loads 2 vendors / 2 POs / 15 line items; second call is a no-op — skip-if-exists)
-- [ ] T017 Implement `app/db/seed.py` `seed_reference_data(session, data_dir)` using stdlib `csv`, skip-if-rows-exist
+- [ ] T017 Implement `app/db/seed.py` `seed_reference_data(session, data_dir)` using stdlib `csv`, skip-if-rows-exist (runs after migrations, on startup)
 
 ### Services (pure/core)
 
@@ -85,10 +87,10 @@ scaffold that every user story depends on.
 - [ ] T029 Implement `app/agent/conversation.py` (per-`conversation_id` registry `{id: (Agent, Lock)}` with `get_or_create`; request-scoped attachment `contextvar` set/reset helpers)
 - [ ] T030 Implement `app/agent/prompts.py` — the **single home for all prompt text** as named constants: `ORCHESTRATOR_SYSTEM_PROMPT` (role, tool inventory, reason-code taxonomy, tolerances, "call `store_decision` once per processing turn"), `INVOICE_EXTRACTION_PROMPT`, and `PO_EXTRACTION_PROMPT`. (Create before T023, which imports the extraction prompts; the orchestrator/US prompt work in T040/T045/T048 edits `ORCHESTRATOR_SYSTEM_PROMPT` here.)
 - [ ] T031 Implement `app/agent/orchestrator.py` `build_agent(conversation_id)` (`OpenAIModel` + tools + `SlidingWindowConversationManager` + `callback_handler=None`) and an `AGENT_FACTORY` indirection seam for tests
-- [ ] T032 Implement `app/main.py` (FastAPI app; on-startup `seed_reference_data`; router registration placeholder)
+- [ ] T032 Implement `app/main.py` (FastAPI app; on-startup run `seed_reference_data` — assumes `alembic upgrade head` has created the schema; router registration placeholder)
 - [ ] T033 Write `tests/integration/test_health.py` (TestClient: `GET /health` → 200, providers/database flags, `status` ok/degraded)
 - [ ] T034 Implement `app/api/health.py` `GET /health` → `HealthResponse` (key-configured checks + `SELECT 1`)
-- [ ] T035 Build `tests/conftest.py`: in-memory SQLite fixture + `get_session` override, provider stubs, deterministic **fake agent** wired via `AGENT_FACTORY` (drives real tools in a fixed order), and a `tests/fixtures/` loader
+- [ ] T035 Build `tests/conftest.py`: a DB fixture creating the schema via `metadata.create_all` on an in-memory SQLite engine (portable ORM types allow this; a `TEST_DATABASE_URL` env opts into a real Postgres test DB) with per-test transaction rollback + `get_session` override, provider stubs, deterministic **fake agent** wired via `AGENT_FACTORY` (drives real tools in a fixed order), and a `tests/fixtures/` loader
 
 **Checkpoint**: foundational tests (T007, T012, T016, T018, T020, T022, T024, T033) pass; `GET /health` returns `ok`. User-story work can begin.
 
@@ -157,7 +159,7 @@ attachment yields a clarifying question (no fabricated decision); a processing t
 - [ ] T051 [P] Write `README.md` (setup incl. `poppler`, run, the three smoke flows) mirroring quickstart.md
 - [ ] T052 [P] Error-handling & logging pass across `app/api/` and tools; confirm no secrets / `*.db` / raw upload bytes are persisted or committed
 - [ ] T053 Coverage validation: `pytest --cov=app --cov-report=term-missing` ≥ 80% on core (`app/db`, `app/services`, `app/agent/tools`, `app/schemas`); document any excluded live-call lines
-- [ ] T054 Final validation (quickstart): `python -c "import app.main"`, `uvicorn app.main:app` + `GET /health` = ok, and the three `curl` flows produce the expected decisions
+- [ ] T054 Final validation (quickstart): `alembic upgrade head` on a fresh Postgres, `python -c "import app.main"`, `uvicorn app.main:app` + `GET /health` = ok (`database: true`), and the three `curl` flows produce the expected decisions
 
 ---
 
@@ -185,4 +187,8 @@ attachment yields a clarifying question (no fabricated decision); a processing t
 - Add **US2** (multi-turn refinement) and **US3** (graceful/explainable) as
   incremental, independently testable slices.
 - **Polish** (streaming, README, coverage, final validation) last.
-- Total: **54 tasks** — Setup 6, Foundational 29, US1 6, US2 4, US3 4, Polish 5.
+- Total: **56 tasks** — Setup 6, Foundational 31 (incl. Alembic init T014a + initial migration T014b), US1 6, US2 4, US3 4, Polish 5.
+
+**DB bootstrap order**: `alembic upgrade head` (T014a/T014b create the schema) →
+app startup seeds reference data (T017/T032). Everything reads `DATABASE_URL`, so
+swapping Postgres instances (or a test DB) is env-only.

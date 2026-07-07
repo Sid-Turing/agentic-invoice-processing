@@ -5,6 +5,7 @@
 ## Prerequisites
 
 - Python 3.11+
+- **PostgreSQL** (local is fine, e.g. `docker run -e POSTGRES_USER=invoice -e POSTGRES_PASSWORD=invoice -e POSTGRES_DB=invoices -p 5432:5432 postgres:16`)
 - `poppler` (system dependency for `pdf2image`) — macOS: `brew install poppler`;
   Debian/Ubuntu: `apt-get install poppler-utils`
 - An **OpenAI API key** (orchestrator) and a **Google Gemini API key** (extraction)
@@ -19,15 +20,22 @@ pip install -e ".[dev]"          # installs strands-agents[openai,gemini], fasta
 cp .env.example .env             # then edit:
 #   OPENAI_API_KEY=sk-...
 #   GEMINI_API_KEY=...
-#   OPENAI_MODEL_ID=gpt-4o-mini          (optional)
-#   GEMINI_MODEL_ID=gemini-2.0-flash     (optional)
-#   DATABASE_URL=sqlite:///./invoices.db (optional)
-#   TAX_RATE=0.09125  SUPPORTED_CURRENCIES=USD  (optional tolerances/config)
+#   OPENAI_MODEL_ID=gpt-4o-mini                                   (optional)
+#   GEMINI_MODEL_ID=gemini-2.0-flash                              (optional)
+#   DATABASE_URL=postgresql+psycopg2://invoice:invoice@localhost:5432/invoices
+#   TAX_RATE=0.09125  SUPPORTED_CURRENCIES=USD                    (optional)
+```
+
+## Create the schema (Alembic) + seed
+
+```bash
+alembic upgrade head             # creates the 4 tables from scratch in DATABASE_URL
 ```
 
 The three PO CSVs (`purchase_orders_data.csv`, `po_vendors_data.csv`,
 `purchase_order_line_items_data.csv`) ship under `data/` and seed the reference
-tables on first startup (skipped if rows already exist).
+tables on first startup (skipped if rows already exist). Swapping databases is
+env-only — point `DATABASE_URL` elsewhere and re-run `alembic upgrade head`.
 
 ## Run
 
@@ -85,11 +93,12 @@ curl -s -X POST http://localhost:8000/chat \
 # import / startup check (VAL-001)
 python -c "import app.main"
 
-# tests + coverage (VAL-003/004) — providers stubbed, SQLite in-memory
+# tests + coverage (VAL-003/004) — providers stubbed; schema on in-memory SQLite
+# (portable ORM types), or set TEST_DATABASE_URL for a real Postgres test DB
 pytest --cov=app --cov-report=term-missing
 ```
 
 Integration tests cover: single-turn PO-on-file, single-turn uploaded-PO,
 multi-turn PO-arrives-later, a non-processing message, and `/health` — using
-fixture documents, a seeded in-memory DB, and a deterministic fake agent injected
-via the `AGENT_FACTORY` seam (no live provider calls in CI).
+fixture documents, a seeded test DB, and a deterministic fake agent injected via
+the `AGENT_FACTORY` seam (no live provider calls in CI).

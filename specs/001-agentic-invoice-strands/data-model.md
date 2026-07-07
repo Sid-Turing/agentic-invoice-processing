@@ -3,9 +3,11 @@
 **Feature**: `001-agentic-invoice-strands` | **Date**: 2026-07-07
 
 Two layers: **domain schemas** (Pydantic — the wire/tool contracts and in-memory
-shapes) and **persistence** (SQLAlchemy ORM — SQLite tables). PO reference tables
-are seeded from the project CSVs and upserted on PO upload; `processed_invoices`
-is the new results store.
+shapes) and **persistence** (SQLAlchemy ORM — **PostgreSQL** tables created from
+scratch by **Alembic** migrations). PO reference tables are seeded from the project
+CSVs and upserted on PO upload; `processed_invoices` is the new results store. ORM
+column types are kept dialect-portable (`JSON`, string UUIDs, `Numeric`) so the
+same models run on Postgres (runtime) and SQLite in-memory (fast unit tests).
 
 ---
 
@@ -80,7 +82,12 @@ check contributes a `ReasonCode` and forces `NEEDS_REVIEW`.
 
 ---
 
-## 2. Persistence (SQLAlchemy ORM → SQLite)
+## 2. Persistence (SQLAlchemy ORM → PostgreSQL, schema via Alembic)
+
+Tables are created by `alembic upgrade head` (initial migration
+`0001_initial`), not by `metadata.create_all` at runtime. `Numeric` for money,
+`JSON` (portable) for the result blobs, string UUIDs for portability.
+
 
 ### `po_vendors` (reference; seeded, upsertable)
 `id: str PK` (uuid), `name`, `tax_id`, `state`, `street_address`, `city`,

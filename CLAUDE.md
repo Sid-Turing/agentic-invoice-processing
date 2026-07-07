@@ -2,8 +2,9 @@
 
 A standalone, single-user backend service that reworks the legacy multi-service
 invoice pipeline into one **Strands Agents** flow behind a ChatGPT-style
-multimodal chat API. Python 3.11+, FastAPI, SQLAlchemy 2.0 + SQLite. No frontend,
-no email service, no auth.
+multimodal chat API. Python 3.11+, FastAPI, SQLAlchemy 2.0 + **PostgreSQL**
+(schema created from scratch via **Alembic**; connection from `DATABASE_URL`,
+swappable). No frontend, no email service, no auth.
 
 Core shape: one **Orchestrator agent** (OpenAI model) with five tools —
 `extract_document` (Gemini vision, structured output), `lookup_purchase_order`
@@ -24,9 +25,11 @@ patterns; the only classes are framework-mandated (Pydantic, SQLAlchemy ORM, the
 Strands `Agent`). Secrets (OpenAI/Gemini keys, `DATABASE_URL`) come from the
 environment / a gitignored `.env` — never commit them or the `*.db` file.
 
-Validation: `python -c "import app.main"` (import check), `uvicorn app.main:app`
-+ `GET /health`, and `pytest --cov=app`. Tests stub the model providers and inject
-a deterministic fake agent via the `AGENT_FACTORY` seam; the DB runs in-memory.
+Validation: `alembic upgrade head` (creates the 4 tables), `python -c "import
+app.main"` (import check), `uvicorn app.main:app` + `GET /health`, and
+`pytest --cov=app`. Tests stub the model providers and inject a deterministic fake
+agent via the `AGENT_FACTORY` seam; the DB schema is built on in-memory SQLite via
+portable ORM types (or a real Postgres via `TEST_DATABASE_URL`).
 
 <!-- SPECKIT START -->
 Active feature plan (this branch): `specs/001-agentic-invoice-strands/plan.md`.

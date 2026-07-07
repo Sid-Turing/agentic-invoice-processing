@@ -22,13 +22,13 @@ state are the cruxes).
 ## Technical Context
 
 **Language/Version**: Python 3.11+
-**Primary Dependencies**: `strands-agents[openai,gemini]` (agent loop + `OpenAIModel`/`GeminiModel`), FastAPI + `uvicorn[standard]` + `python-multipart` (chat API/upload), SQLAlchemy 2.0 (persistence), `pdf2image` + Pillow (PDF→image), Pydantic v2 (schemas), `python-dotenv` (local config)
-**Storage**: SQLite (file, `DATABASE_URL`, default `sqlite:///./invoices.db`) via SQLAlchemy 2.0; seeded from the three PO CSVs; portable to PostgreSQL by URL swap
+**Primary Dependencies**: `strands-agents[openai,gemini]` (agent loop + `OpenAIModel`/`GeminiModel`), FastAPI + `uvicorn[standard]` + `python-multipart` (chat API/upload), SQLAlchemy 2.0 + `psycopg2-binary` + Alembic (persistence + migrations), `pdf2image` + Pillow (PDF→image), Pydantic v2 (schemas), `python-dotenv` (local config)
+**Storage**: PostgreSQL via SQLAlchemy 2.0 (connection from `DATABASE_URL`, swappable); schema created from scratch by Alembic (`alembic upgrade head`); reference tables seeded from the three PO CSVs; dialect-portable ORM types so SQLite in-memory works for unit tests
 **Testing**: `pytest` + `pytest-cov`; FastAPI `TestClient` (`httpx`) for integration; providers stubbed and a deterministic fake agent injected via an `AGENT_FACTORY` seam
 **Target Platform**: Local single-user service (Linux/macOS), Python ASGI (uvicorn)
 **Project Type**: Backend web service (agentic) — no frontend, no CLI
 **Performance Goals**: A single-page, no-reconciliation turn returns in < 60 s (SC-007); interactive latency dominated by model round-trips
-**Constraints**: Self-contained (no external infra beyond model APIs + local SQLite + poppler); raw upload bytes never persisted (SEC-003); DB writes confined to PO upsert + result persistence, no deletes (SEC-004); secrets from env only
+**Constraints**: External infra = a PostgreSQL instance (local Docker fine) + model APIs + poppler; raw upload bytes never persisted (SEC-003); DB writes confined to PO upsert + result persistence, no deletes (SEC-004); secrets + `DATABASE_URL` from env only
 **Scale/Scope**: One invoice (+ optional PO) per turn; single user; alpha/demo scale. ~10–15 source modules; estimated < 2000 added lines.
 
 ## Constitution Check
@@ -63,9 +63,10 @@ state are the cruxes).
 - **Minimal Maintainable Change**: PASS. Functional-first — tools, services, and
   repository functions are plain functions; the only classes are framework-mandated
   (Pydantic models, SQLAlchemy ORM models, the Strands `Agent`). New runtime deps
-  are all justified in research.md's license table (all permissive; no GPL family);
-  the design *drops* deps vs. the original (`psycopg2`, `pandas`, `numpy`,
-  `pytesseract`, `aiohttp`, `google-cloud-storage`).
+  are justified in research.md's license table; `psycopg2-binary` carries the
+  LGPL-with-exception license (kept from the original; a strict LGPL gate would
+  swap it for BSD `pg8000`). The design still *drops* deps vs. the original
+  (`pandas`, `numpy`, `pytesseract`, `aiohttp`, `google-cloud-storage`).
 - **Reusable-Core-First Architecture**: PASS. Business logic lives in
   `app/services/` (extraction, pdf, decision assembly), `app/db/` (repository), and
   `app/agent/tools/`; FastAPI handlers in `app/api/` are thin and delegate. Core
@@ -120,10 +121,16 @@ app/
 │   ├── extraction_service.py   # Gemini call -> ExtractedInvoice/PurchaseOrder (imports its prompt from agent/prompts.py; no inline prompt text)
 │   └── decision_service.py     # (pure helpers) verdict-from-checks rule, tolerance comparisons
 └── db/
-    ├── database.py             # engine/session factory (SQLite)
-    ├── models.py               # ORM: PoVendor, PurchaseOrder, PoLineItem, ProcessedInvoice
+    ├── database.py             # engine/session factory (from DATABASE_URL)
+    ├── models.py               # ORM (portable types): PoVendor, PurchaseOrder, PoLineItem, ProcessedInvoice
     ├── repository.py           # get_po_by_number, upsert_purchase_order, persist_decision
     └── seed.py                 # seed_reference_data() from CSVs (skip-if-exists)
+
+alembic/
+├── env.py                      # reads DATABASE_URL + app models' metadata
+└── versions/
+    └── 0001_initial.py         # create the 4 tables from scratch
+alembic.ini                     # (repo root) migration config
 
 data/
 ├── purchase_orders_data.csv    # seed (copied from project root)
@@ -152,8 +159,11 @@ inline prompt strings. This is the concrete layout referenced by `/speckit.tasks
 
 ## Local Validation Commands
 
+- **DB setup**: `alembic upgrade head` (creates the 4 tables in the `DATABASE_URL`
+  Postgres), then reference-data seeding runs on startup (skip-if-exists).
 - **Startup / import check (VAL-001)**: `python -c "import app.main"` and
-  `uvicorn app.main:app --port 8000` → `GET /health` returns `status: "ok"`.
+  `uvicorn app.main:app --port 8000` → `GET /health` returns `status: "ok"`
+  (with `database: true`).
 - **Tests + coverage (VAL-003/004)**: `pytest --cov=app --cov-report=term-missing`
   (target ≥ 80% on core; live-provider call sites excluded and covered via the
   fake-agent seam).
