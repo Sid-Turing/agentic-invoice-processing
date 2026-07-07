@@ -32,5 +32,6 @@
 ## Notes
 
 - **Framework/provider naming is intentional and confined to the Assumptions section.** Strands, Gemini, and OpenAI are named there because they are fixed constraints from the user's request and clarifications, not free implementation choices. The Functional Requirements and Success Criteria bodies remain behavior-focused and technology-agnostic, so the spec still reads for stakeholders while preserving the mandated stack for planning.
-- Three clarifications (entry point, PO requirement, model provider) were resolved with the user before finalizing rather than left as `[NEEDS CLARIFICATION]` markers; their outcomes are recorded in the Assumptions section.
+- Clarifications resolved live with the user before finalizing (rather than left as `[NEEDS CLARIFICATION]` markers) and recorded in Assumptions: entry point (thin HTTP API), model providers (Gemini + OpenAI via Strands), PO sourcing (optional upload → extract + write to DB, else lookup by PO number), and persistence (results store + record_id, PO tables writable only via upload upsert).
+- Grounding: the original codebase was inspected to confirm the DB split — PO tables were read-only reference data at runtime; the invoice record was the write-heavy side. The spec deliberately reintroduces PO writes only through the upload-upsert path (FR-004/021, SEC-004).
 - All items pass. Spec is ready for `/speckit.clarify` (optional) or `/speckit.plan`.
