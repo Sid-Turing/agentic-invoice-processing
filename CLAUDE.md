@@ -17,7 +17,9 @@ deleted). Raw upload bytes never outlive the request.
 
 Layering (Reusable-Core-First): pure logic in `app/db/` and `app/services/`,
 Strands wrappers in `app/agent/tools/`, agent composition in
-`app/agent/orchestrator.py`, thin handlers in `app/api/`. Prefer functional
+`app/agent/orchestrator.py`, thin handlers in `app/api/`. All prompt text lives in
+one place — `app/agent/prompts.py` (orchestrator system prompt + invoice/PO
+extraction prompts as named constants); no inline prompt strings elsewhere. Prefer functional
 patterns; the only classes are framework-mandated (Pydantic, SQLAlchemy ORM, the
 Strands `Agent`). Secrets (OpenAI/Gemini keys, `DATABASE_URL`) come from the
 environment / a gitignored `.env` — never commit them or the `*.db` file.

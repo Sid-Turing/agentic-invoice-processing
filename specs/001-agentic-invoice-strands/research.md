@@ -150,6 +150,11 @@ line items).
 `pdf2image` + Pillow are already the project's approach. Typed output removes the
 regex JSON-scraping step.
 
+**Prompt location**: all prompt text — the orchestrator system prompt and the
+invoice/PO extraction prompts — lives in a single module `app/agent/prompts.py` as
+named constants. `extraction_service.py` and `orchestrator.py` import them and hold
+no inline prompt strings, so every prompt is tuned/reviewed in one place.
+
 **Alternatives rejected**: PyMuPDF (`fitz`) rendering — capable, but no reason to
 diverge from the working `pdf2image` path. OCR (`pytesseract`) — the vision model
 reads the image directly; OCR is redundant.

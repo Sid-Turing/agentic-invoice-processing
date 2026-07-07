@@ -70,7 +70,7 @@ scaffold that every user story depends on.
 - [ ] T020 [P] Write `tests/unit/test_decision_service.py` (verdict-from-checks rule; tolerance comparisons for line math, financial totals, PO qty/price; flat-rate tax expectation)
 - [ ] T021 [P] Implement `app/services/decision_service.py` (pure helpers: `verdict_from_checks`, tolerance comparators, tax expectation — no I/O)
 - [ ] T022 Write `tests/unit/test_extraction_service.py` with a stubbed Gemini client (returns a canned `ExtractedInvoice`/`PurchaseOrder`)
-- [ ] T023 Implement `app/services/extraction_service.py` (`GeminiModel` structured-output call + carried-over extraction prompt; image content blocks; merge multi-page results)
+- [ ] T023 Implement `app/services/extraction_service.py` (`GeminiModel` structured-output call; image content blocks; merge multi-page results) — imports `INVOICE_EXTRACTION_PROMPT` / `PO_EXTRACTION_PROMPT` from `app/agent/prompts.py`, no inline prompt text
 
 ### Tools (Strands `@tool` wrappers)
 
@@ -83,7 +83,7 @@ scaffold that every user story depends on.
 ### Agent + app scaffold
 
 - [ ] T029 Implement `app/agent/conversation.py` (per-`conversation_id` registry `{id: (Agent, Lock)}` with `get_or_create`; request-scoped attachment `contextvar` set/reset helpers)
-- [ ] T030 Implement `app/agent/prompts.py` (base system prompt: role, tool inventory, reason-code taxonomy, tolerances, "call `store_decision` once per processing turn")
+- [ ] T030 Implement `app/agent/prompts.py` — the **single home for all prompt text** as named constants: `ORCHESTRATOR_SYSTEM_PROMPT` (role, tool inventory, reason-code taxonomy, tolerances, "call `store_decision` once per processing turn"), `INVOICE_EXTRACTION_PROMPT`, and `PO_EXTRACTION_PROMPT`. (Create before T023, which imports the extraction prompts; the orchestrator/US prompt work in T040/T045/T048 edits `ORCHESTRATOR_SYSTEM_PROMPT` here.)
 - [ ] T031 Implement `app/agent/orchestrator.py` `build_agent(conversation_id)` (`OpenAIModel` + tools + `SlidingWindowConversationManager` + `callback_handler=None`) and an `AGENT_FACTORY` indirection seam for tests
 - [ ] T032 Implement `app/main.py` (FastAPI app; on-startup `seed_reference_data`; router registration placeholder)
 - [ ] T033 Write `tests/integration/test_health.py` (TestClient: `GET /health` → 200, providers/database flags, `status` ok/degraded)
@@ -164,7 +164,7 @@ attachment yields a clarifying question (no fabricated decision); a processing t
 ## Dependencies & Execution Order
 
 - **Setup (P1)** → **Foundational (P2)** → **US1 (P3)** → **US2 (P4)** → **US3 (P5)** → **Polish (P6)**.
-- Foundational blocks all stories. Within Foundational: schemas (T007–T011) and pure services (T018–T021) are independent; DB (T012–T017) precedes tools that touch it (T026–T028); tools precede the orchestrator (T031); the app scaffold (T032–T035) precedes any integration test.
+- Foundational blocks all stories. Within Foundational: schemas (T007–T011) and pure services (T018–T021) are independent; `app/agent/prompts.py` (T030) is the single prompt home and must be created **before** `extraction_service.py` (T023) which imports the extraction prompts; DB (T012–T017) precedes tools that touch it (T026–T028); tools precede the orchestrator (T031); the app scaffold (T032–T035) precedes any integration test.
 - **US1** depends only on Foundational and is the MVP. **US2** and **US3** depend on US1's chat handler + prompt (T039/T040) but are independent of each other — they extend the prompt and add tests, touching `app/agent/prompts.py` sequentially (not in parallel with each other).
 - TDD: each test task precedes its implementation task and must fail first.
 

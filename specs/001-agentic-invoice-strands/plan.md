@@ -109,7 +109,7 @@ app/
 ├── agent/
 │   ├── orchestrator.py         # build_agent(): OpenAIModel + system prompt + tools + conversation mgr
 │   ├── conversation.py         # per-conversation Agent registry + locks; request-scoped attachment contextvar
-│   ├── prompts.py              # system prompt text (workflow, tolerances, reason codes, obligations)
+│   ├── prompts.py              # SINGLE prompt home: ORCHESTRATOR_SYSTEM_PROMPT + INVOICE_EXTRACTION_PROMPT + PO_EXTRACTION_PROMPT (named constants; imported by orchestrator + extraction_service)
 │   └── tools/
 │       ├── extraction.py       # extract_document  (Gemini structured output)
 │       ├── po_lookup.py        # lookup_purchase_order  (DB read)
@@ -117,7 +117,7 @@ app/
 │       └── math_tool.py        # calculate  (safe AST eval)
 ├── services/
 │   ├── pdf_service.py          # pdf bytes -> [png bytes] (pdf2image, 300 dpi, Pillow downscale)
-│   ├── extraction_service.py   # Gemini call + extraction prompt -> ExtractedInvoice/PurchaseOrder
+│   ├── extraction_service.py   # Gemini call -> ExtractedInvoice/PurchaseOrder (imports its prompt from agent/prompts.py; no inline prompt text)
 │   └── decision_service.py     # (pure helpers) verdict-from-checks rule, tolerance comparisons
 └── db/
     ├── database.py             # engine/session factory (SQLite)
@@ -145,7 +145,10 @@ README.md
 (no `src/`/frontend split — there is no frontend). Layering follows
 Reusable-Core-First: `db/` and `services/` hold pure logic, `agent/tools/` wrap
 them as Strands tools, `agent/orchestrator.py` composes the agent, and `api/`
-handlers are thin. This is the concrete layout referenced by `/speckit.tasks`.
+handlers are thin. **All prompt text lives in one place — `app/agent/prompts.py`**
+as named constants (orchestrator system prompt + the invoice/PO extraction
+prompts); `extraction_service.py` and `orchestrator.py` import from it and hold no
+inline prompt strings. This is the concrete layout referenced by `/speckit.tasks`.
 
 ## Local Validation Commands
 
