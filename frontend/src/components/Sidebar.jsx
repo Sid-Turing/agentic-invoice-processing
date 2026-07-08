@@ -17,7 +17,7 @@ export default function Sidebar() {
     <aside className="sidebar">
       <div className="brand">
         <div className="brand-box"><span className="material-symbols-outlined">description</span></div>
-        <div>
+        <div className="brand-text">
           <div className="brand-name">Invoice Agent</div>
           <div className="brand-sub">Enterprise Finance AI</div>
         </div>
@@ -25,10 +25,10 @@ export default function Sidebar() {
 
       <nav className="nav">
         {LINKS.map((l) => (
-          <NavLink key={l.to} to={l.to} end={l.end}
+          <NavLink key={l.to} to={l.to} end={l.end} title={l.label}
                    className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
             <Icon name={l.icon} />
-            <span>{l.label}</span>
+            <span className="nav-label">{l.label}</span>
           </NavLink>
         ))}
       </nav>

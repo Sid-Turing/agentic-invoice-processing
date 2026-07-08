@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import Sidebar from './components/Sidebar.jsx'
 import TopBar from './components/TopBar.jsx'
@@ -9,11 +10,12 @@ import PurchaseOrdersPage from './pages/PurchaseOrdersPage.jsx'
 import VendorsPage from './pages/VendorsPage.jsx'
 
 export default function App() {
+  const [collapsed, setCollapsed] = useState(false)
   return (
-    <div className="app-shell">
+    <div className={'app-shell' + (collapsed ? ' collapsed' : '')}>
       <Sidebar />
       <div className="content">
-        <TopBar />
+        <TopBar onToggle={() => setCollapsed((c) => !c)} />
         <Routes>
           <Route path="/" element={<ChatPage />} />
           <Route path="/history" element={<HistoryPage />} />

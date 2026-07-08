@@ -8,13 +8,15 @@ const TITLES = {
   '/vendors': 'Vendors',
 }
 
-export default function TopBar() {
+export default function TopBar({ onToggle }) {
   const { pathname } = useLocation()
   const label = TITLES[pathname] || (pathname.startsWith('/invoices/') ? 'Invoice Detail' : 'Session')
   return (
     <header className="topbar">
       <div className="crumbs">
-        <span className="material-symbols-outlined">menu_open</span>
+        <button className="toggle" onClick={onToggle} title="Toggle sidebar" aria-label="Toggle sidebar">
+          <span className="material-symbols-outlined">menu</span>
+        </button>
         <span className="cur">Current Session</span>
         <span className="sep">/</span>
         <span className="crumb">{label}</span>

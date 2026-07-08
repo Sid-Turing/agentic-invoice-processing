@@ -1,6 +1,7 @@
 import { useState, useRef, useReducer, useEffect } from 'react'
 import { streamMessage } from '../api.js'
 import DecisionCard from '../components/DecisionCard.jsx'
+import DashboardRail from '../components/DashboardRail.jsx'
 
 function AgentTurn({ turn }) {
   return (
@@ -33,6 +34,7 @@ export default function ChatPage() {
   const [invoice, setInvoice] = useState(null)
   const [po, setPo] = useState(null)
   const [streaming, setStreaming] = useState(false)
+  const [railKey, setRailKey] = useState(0)
   const liveRef = useRef(null)
   const [, tick] = useReducer((x) => x + 1, 0)
   const endRef = useRef(null)
@@ -72,6 +74,7 @@ export default function ChatPage() {
         liveRef.current = null
         setMessages((m) => [...m, { role: 'agent', flow: finished.flow, decision: finished.decision }])
         setStreaming(false)
+        if (finished.decision) setRailKey((k) => k + 1)   // refresh dashboard rail
       },
     })
   }
@@ -89,6 +92,8 @@ export default function ChatPage() {
         <small>Upload an invoice (and optional PO) — watch the agent extract, validate, reconcile, decide.</small>
       </header>
 
+      <div className="chat-split">
+        <div className="chat-col">
       <main className="chat">
         {isEmpty ? (
           <div className="empty-hero">
@@ -159,6 +164,9 @@ export default function ChatPage() {
 
           <p className="composer-note">Powered by Enterprise Finance AI. Confidential data is encrypted and secure.</p>
         </form>
+      </div>
+        </div>
+        <DashboardRail refreshKey={railKey} />
       </div>
     </>
   )
