@@ -155,7 +155,7 @@ attachment yields a clarifying question (no fabricated decision); a processing t
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T050 [P] Streaming variant (SHOULD, FR-024): add an SSE path to `app/api/chat.py` via `agent.stream_async` (`text/event-stream`, terminal `decision` event) + a streaming test in `tests/integration/test_chat_stream.py`
+- [x] T050 [P] Streaming variant (SHOULD, FR-024): add an SSE path to `app/api/chat.py` via `agent.stream_async` (`text/event-stream`, terminal `decision` event) + a streaming test in `tests/integration/test_chat_stream.py`
 - [x] T051 [P] Write `README.md` (setup incl. `poppler`, run, the three smoke flows) mirroring quickstart.md
 - [x] T052 [P] Error-handling & logging pass across `app/api/` and tools; confirm no secrets / `*.db` / raw upload bytes are persisted or committed
 - [x] T053 Coverage validation: `pytest --cov=app --cov-report=term-missing` ≥ 80% on core (`app/db`, `app/services`, `app/agent/tools`, `app/schemas`); document any excluded live-call lines

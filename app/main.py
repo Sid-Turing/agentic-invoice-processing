@@ -8,10 +8,14 @@ from __future__ import annotations
 
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
 
 from app.api import chat, health
+
+_STATIC = Path(__file__).resolve().parent / "static"
 from app.config import get_settings
 from app.db.database import session_scope
 from app.db.seed import seed_reference_data
@@ -35,3 +39,8 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Agentic Invoice Processing", lifespan=lifespan)
 app.include_router(health.router)
 app.include_router(chat.router)
+
+
+@app.get("/", response_class=HTMLResponse)
+def ui() -> str:
+    return (_STATIC / "index.html").read_text()
