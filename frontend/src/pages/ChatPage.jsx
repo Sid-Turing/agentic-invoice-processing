@@ -130,14 +130,14 @@ export default function ChatPage() {
       <div className="composer">
         <form className="composer-inner" onSubmit={onSubmit}>
           <div className="status-row">
-            <label className="status-item">
-              <span className="material-symbols-outlined">description</span>
-              Invoice: <span className="fname">{invoice?.name || 'none'}</span>
+            <label className={'status-item' + (invoice ? ' has-file' : '')}>
+              <span className="material-symbols-outlined">upload_file</span>
+              Upload Invoice: <span className="fname">{invoice?.name || 'none'}</span>
               <input type="file" accept=".pdf,.png,.jpg,.jpeg" onChange={(e) => setInvoice(e.target.files[0] || null)} />
             </label>
-            <label className="status-item">
-              <span className="material-symbols-outlined">attachment</span>
-              PO (optional): <span className="fname">{po?.name || 'none'}</span>
+            <label className={'status-item' + (po ? ' has-file' : '')}>
+              <span className="material-symbols-outlined">attach_file</span>
+              Upload PO (optional): <span className="fname">{po?.name || 'none'}</span>
               <input type="file" accept=".pdf,.png,.jpg,.jpeg" onChange={(e) => setPo(e.target.files[0] || null)} />
             </label>
           </div>

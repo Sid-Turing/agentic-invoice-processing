@@ -257,11 +257,16 @@ tr.row-flag td { color: var(--warning); }
 .composer { position: sticky; bottom: 0; background: var(--content); border-top: 1px solid var(--line);
   padding: 12px 24px 18px; }
 .composer-inner { max-width: 900px; margin: 0 auto; }
-.status-row { display: flex; gap: 28px; margin-bottom: 10px; padding: 0 4px; }
-.status-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); cursor: pointer; }
-.status-item .material-symbols-outlined { font-size: 16px; }
+.status-row { display: flex; gap: 12px; margin-bottom: 12px; padding: 0; flex-wrap: wrap; }
+.status-item { display: inline-flex; align-items: center; gap: 9px; font-size: 13px; font-weight: 500;
+  color: var(--text-2); cursor: pointer; background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 10px 16px; transition: border-color .15s, background .15s, box-shadow .15s; }
+.status-item:hover { border-color: var(--accent); background: var(--subtle); }
+.status-item .material-symbols-outlined { font-size: 20px; color: var(--muted); }
 .status-item input { display: none; }
 .status-item .fname { font-weight: 600; color: var(--accent); }
+.status-item.has-file { border-color: var(--accent); background: var(--accent-soft); }
+.status-item.has-file .material-symbols-outlined { color: var(--accent); }
 .chatbox { position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card); transition: border-color .15s, box-shadow .15s; }
 .chatbox:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
