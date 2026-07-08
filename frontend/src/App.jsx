@@ -1,6 +1,30 @@
-import { useState, useRef, useEffect } from 'react'
-import { sendMessage } from './api.js'
+import { useState, useRef, useReducer, useEffect } from 'react'
+import { streamMessage } from './api.js'
 import DecisionCard from './components/DecisionCard.jsx'
+
+function AgentTurn({ turn }) {
+  return (
+    <div className="msg agent">
+      <div className="role">Agent</div>
+      <div className="flow">
+        {turn.flow.map((item, i) => {
+          if (item.type === 'tool') {
+            return <div key={i} className="step"><span className="dot">🔧</span> called <b>{item.name}</b></div>
+          }
+          if (item.type === 'result') {
+            return (
+              <div key={i} className="result">
+                <span className={item.status === 'error' ? 'err' : 'ok'}>↳ {item.status || 'ok'}:</span> {item.output}
+              </div>
+            )
+          }
+          return <div key={i} className="tblock">{item.text}</div>
+        })}
+      </div>
+      {turn.decision ? <DecisionCard decision={turn.decision} /> : null}
+    </div>
+  )
+}
 
 export default function App() {
   const [messages, setMessages] = useState([])
@@ -8,31 +32,47 @@ export default function App() {
   const [text, setText] = useState('')
   const [invoice, setInvoice] = useState(null)
   const [po, setPo] = useState(null)
-  const [loading, setLoading] = useState(false)
+  const [streaming, setStreaming] = useState(false)
+  const liveRef = useRef(null)          // the in-progress agent turn
+  const [, tick] = useReducer((x) => x + 1, 0)
   const endRef = useRef(null)
 
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, loading])
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) })
+
+  function appendToken(t) {
+    const flow = liveRef.current.flow
+    const last = flow[flow.length - 1]
+    if (last && last.type === 'text') last.text += t.text
+    else flow.push({ type: 'text', text: t.text })
+    tick()
+  }
 
   async function onSubmit(e) {
     e.preventDefault()
-    if (loading) return
+    if (streaming) return
     if (!text.trim() && !invoice) return
 
     const attachments = [invoice?.name, po?.name].filter(Boolean)
     setMessages((m) => [...m, { role: 'user', text: text.trim(), attachments }])
 
     const payload = { message: text.trim(), conversationId, invoice, po }
-    setText(''); setInvoice(null); setPo(null); setLoading(true)
+    setText(''); setInvoice(null); setPo(null)
+    liveRef.current = { flow: [], decision: null }
+    setStreaming(true)
 
-    try {
-      const data = await sendMessage(payload)
-      setConversationId(data.conversation_id)
-      setMessages((m) => [...m, { role: 'agent', text: data.message, decision: data.decision }])
-    } catch (err) {
-      setMessages((m) => [...m, { role: 'agent', text: '', error: err.message || String(err) }])
-    } finally {
-      setLoading(false)
-    }
+    await streamMessage(payload, {
+      onMeta: (d) => setConversationId(d.conversation_id),
+      onTool: (d) => { liveRef.current.flow.push({ type: 'tool', name: d.name }); tick() },
+      onToolResult: (d) => { liveRef.current.flow.push({ type: 'result', status: d.status, output: d.output }); tick() },
+      onToken: (d) => appendToken(d),
+      onDecision: (d) => { liveRef.current.decision = d; tick() },
+      onError: (d) => { liveRef.current.flow.push({ type: 'text', text: '⚠ ' + (d?.detail || 'error') }); tick() },
+      onDone: () => {
+        setMessages((m) => [...m, { role: 'agent', ...liveRef.current }])
+        liveRef.current = null
+        setStreaming(false)
+      },
+    })
   }
 
   function onKeyDown(e) {
@@ -43,25 +83,25 @@ export default function App() {
     <div className="app">
       <header>
         Invoice Agent
-        <small>upload an invoice (and optional PO) — the agent extracts, validates, reconciles, decides</small>
+        <small>upload an invoice (and optional PO) — watch the agent extract, validate, reconcile, decide</small>
       </header>
 
       <main className="chat">
-        {messages.length === 0 && (
+        {messages.length === 0 && !streaming && (
           <div className="empty">Attach an invoice and hit Send, or ask a question.</div>
         )}
-        {messages.map((m, i) => (
-          <div key={i} className={`msg ${m.role}`}>
-            <div className="role">{m.role === 'user' ? 'You' : 'Agent'}</div>
-            {m.text ? <div className="bubble">{m.text}</div> : null}
-            {m.attachments?.length ? (
-              <div className="attach">📎 {m.attachments.join(', ')}</div>
-            ) : null}
-            {m.error ? <div className="bubble error">⚠ {m.error}</div> : null}
-            {m.decision ? <DecisionCard decision={m.decision} /> : null}
-          </div>
-        ))}
-        {loading && <div className="msg agent"><div className="role">Agent</div><div className="bubble typing">Working…</div></div>}
+        {messages.map((m, i) =>
+          m.role === 'user' ? (
+            <div key={i} className="msg user">
+              <div className="role">You</div>
+              {m.text ? <div className="bubble">{m.text}</div> : null}
+              {m.attachments?.length ? <div className="attach">📎 {m.attachments.join(', ')}</div> : null}
+            </div>
+          ) : (
+            <AgentTurn key={i} turn={m} />
+          )
+        )}
+        {streaming && liveRef.current && <AgentTurn turn={liveRef.current} />}
         <div ref={endRef} />
       </main>
 
@@ -82,7 +122,7 @@ export default function App() {
           onKeyDown={onKeyDown}
           placeholder="Ask something, or attach an invoice and hit Send…"
         />
-        <button type="submit" disabled={loading}>{loading ? '…' : 'Send'}</button>
+        <button type="submit" disabled={streaming}>{streaming ? '…' : 'Send'}</button>
       </form>
     </div>
   )

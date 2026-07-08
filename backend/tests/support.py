@@ -234,6 +234,18 @@ class FakeAgent:
         result = store_decision(decision)
         return f"{verdict}. Recorded as {result['record_id']}."
 
+    async def stream_async(self, prompt: str):
+        """Mimic Strands' stream event shapes: a tool event, its toolResult message,
+        a token, then the decision (via invoke_async which calls the real tools)."""
+        if conversation.get_attachment("invoice_1") is not None:
+            yield {"current_tool_use": {"toolUseId": "t1", "name": "extract_document"}}
+            yield {"message": {"content": [
+                {"toolResult": {"toolUseId": "t1", "status": "success",
+                                "content": [{"text": "{\"invoice_number\": \"...\"}"}]}}
+            ]}}
+        text = await self.invoke_async(prompt)
+        yield {"data": text}
+
 
 def install_fake_agent(monkeypatch, extraction_map: dict):
     """Wire the AGENT_FACTORY seam and stub vision extraction with canned models.
