@@ -24,10 +24,10 @@ def _default_build(conversation_id: str) -> Any:
     from strands.models.openai import OpenAIModel
 
     settings = get_settings()
+    # No temperature param: reasoning models (gpt-5.x / o-series) reject it.
     model = OpenAIModel(
         client_args={"api_key": settings.openai_api_key},
         model_id=settings.openai_model_id,
-        params={"temperature": 0.0},
     )
     return Agent(
         model=model,

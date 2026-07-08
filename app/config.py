@@ -28,7 +28,7 @@ class Settings:
     # Providers
     openai_api_key: str = field(default_factory=lambda: os.getenv("OPENAI_API_KEY", ""))
     gemini_api_key: str = field(default_factory=lambda: os.getenv("GEMINI_API_KEY", ""))
-    openai_model_id: str = field(default_factory=lambda: os.getenv("OPENAI_MODEL_ID", "gpt-4o-mini"))
+    openai_model_id: str = field(default_factory=lambda: os.getenv("OPENAI_MODEL_ID", "gpt-5.5-2026-04-23"))
     gemini_model_id: str = field(default_factory=lambda: os.getenv("GEMINI_MODEL_ID", "gemini-2.5-flash"))
 
     # Database (swappable via env)

@@ -19,10 +19,11 @@
   .role { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
   .bubble { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; white-space: pre-wrap; }
   .user .bubble { background: var(--panel2); }
-  .steps { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
-  .chip { font-size: 12px; background: var(--panel2); border: 1px solid var(--line); color: var(--muted);
-          padding: 3px 9px; border-radius: 999px; }
-  .chip b { color: var(--accent); font-weight: 600; }
+  .flow { display: flex; flex-direction: column; gap: 8px; }
+  .step { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+  .step .dot { color: var(--accent); }
+  .step b { color: var(--accent); font-weight: 600; }
+  .tblock { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; white-space: pre-wrap; }
   .attach { font-size: 12px; color: var(--muted); }
   .card { margin-top: 12px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
   .card .top { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--panel2); }
@@ -133,19 +134,22 @@ async function send(e) {
   document.getElementById('poName').textContent = 'none';
   btn.disabled = true;
 
-  // assistant message scaffold
+  // assistant message scaffold — a single timeline that interleaves steps + text
   const m = el('msg assistant');
   m.appendChild(el('role', 'Agent'));
-  const steps = el('steps'); m.appendChild(steps);
-  const bubble = el('bubble', ''); m.appendChild(bubble);
+  const flow = el('flow'); m.appendChild(flow);
   chat.appendChild(m); scroll();
 
-  const toolChips = {};
+  let currentText = null;                 // open text block, or null after a tool interrupts
   function addTool(name) {
     if (!name) return;
-    if (toolChips[name]) { toolChips[name].count++; toolChips[name].node.innerHTML = `<b>${name}</b>${toolChips[name].count>1?' ×'+toolChips[name].count:''}`; }
-    else { const c = el('chip', `<b>${name}</b>`); toolChips[name] = {count:1, node:c}; steps.appendChild(c); }
-    scroll();
+    currentText = null;                   // next text starts a fresh block below this step
+    const s = el('step', `<span class="dot">🔧</span> called <b>${name}</b>`);
+    flow.appendChild(s); scroll();
+  }
+  function addToken(text) {
+    if (!currentText) { currentText = el('tblock', ''); flow.appendChild(currentText); }
+    currentText.textContent += text; scroll();
   }
 
   try {
@@ -166,9 +170,9 @@ async function send(e) {
         }
         if (ev === 'meta' && data) { conversationId = data.conversation_id; document.getElementById('hint').textContent = 'Conversation ' + conversationId.slice(0,8); }
         else if (ev === 'tool' && data) addTool(data.name);
-        else if (ev === 'token' && data) { bubble.textContent += data.text; scroll(); }
+        else if (ev === 'token' && data) addToken(data.text);
         else if (ev === 'decision') renderDecision(m, data);
-        else if (ev === 'error' && data) bubble.textContent += '\n[error] ' + data.detail;
+        else if (ev === 'error' && data) addToken('\n[error] ' + data.detail);
       }
     }
   } catch (err) {
