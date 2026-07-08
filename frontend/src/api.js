@@ -56,3 +56,30 @@ export async function getHealth() {
   const resp = await fetch(`${API_BASE}/health`)
   return resp.json()
 }
+
+// --- Read / reporting (feature 002) --------------------------------------- //
+
+async function getJSON(path, params) {
+  const url = new URL(`${API_BASE}${path}`)
+  if (params) {
+    for (const [k, v] of Object.entries(params)) {
+      if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, v)
+    }
+  }
+  const resp = await fetch(url)
+  if (!resp.ok) {
+    let detail = `HTTP ${resp.status}`
+    try { const b = await resp.json(); if (b.detail) detail = b.detail } catch { /* ignore */ }
+    const err = new Error(detail)
+    err.status = resp.status
+    throw err
+  }
+  return resp.json()
+}
+
+export const getInvoices = (params) => getJSON('/invoices', params)
+export const getInvoice = (recordId) => getJSON(`/invoices/${encodeURIComponent(recordId)}`)
+export const getSummary = () => getJSON('/summary')
+export const getPurchaseOrders = (params) => getJSON('/purchase-orders', params)
+export const getPurchaseOrder = (poNumber) => getJSON(`/purchase-orders/${encodeURIComponent(poNumber)}`)
+export const getVendors = (params) => getJSON('/vendors', params)

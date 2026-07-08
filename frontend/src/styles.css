@@ -10,6 +10,63 @@ body { margin: 0; font: 15px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; 
 header { padding: 14px 20px; border-bottom: 1px solid var(--line); font-weight: 600; }
 header small { color: var(--muted); font-weight: 400; margin-left: 8px; }
 
+/* --- app shell (feature 002) --- */
+.app-shell { display: flex; height: 100vh; }
+.sidebar { width: 200px; flex: none; border-right: 1px solid var(--line); background: var(--panel);
+           padding: 14px 10px; display: flex; flex-direction: column; gap: 4px; }
+.sidebar .brand { font-weight: 700; padding: 6px 10px 14px; }
+.nav-link { color: var(--muted); text-decoration: none; padding: 8px 10px; border-radius: 8px; font-size: 14px; }
+.nav-link:hover { background: var(--panel2); color: var(--text); }
+.nav-link.active { background: rgba(110,168,254,.15); color: var(--accent); font-weight: 600; }
+.content { flex: 1; min-width: 0; height: 100vh; overflow: auto; display: flex; flex-direction: column; }
+.page-header { flex: none; }
+.page-body { padding: 20px; max-width: 1040px; width: 100%; margin: 0 auto; }
+.muted { color: var(--muted); }
+.nav-back { display: inline-block; color: var(--accent); text-decoration: none; margin-bottom: 12px; font-size: 13px; }
+.explanation { color: var(--muted); }
+
+/* toolbar / filters */
+.toolbar { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.toolbar input, .toolbar select { background: var(--panel); color: var(--text); border: 1px solid var(--line);
+  border-radius: 8px; padding: 8px 10px; font: inherit; }
+.toolbar input { flex: 1; min-width: 200px; }
+.toolbar button, .pager button, .error-state button { background: var(--panel2); color: var(--text);
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; cursor: pointer; }
+
+/* data grid */
+table.grid { width: 100%; border-collapse: collapse; font-size: 14px; }
+table.grid th { text-align: left; color: var(--muted); font-weight: 600; font-size: 12px;
+  text-transform: uppercase; letter-spacing: .03em; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+table.grid td { padding: 9px 10px; border-bottom: 1px solid var(--line); }
+tr.row-link { cursor: pointer; }
+tr.row-link:hover td { background: var(--panel2); }
+tr.row-flag td { color: var(--amber); }
+.pager { display: flex; align-items: center; gap: 12px; margin-top: 14px; color: var(--muted); font-size: 13px; }
+.empty, .error-state { color: var(--muted); padding: 24px 0; }
+.error-state { color: var(--red); display: flex; gap: 12px; align-items: center; }
+
+/* stat cards + aging + tags */
+.stats { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; min-width: 130px; }
+.stat-value { font-size: 22px; font-weight: 700; }
+.stat-label { color: var(--muted); font-size: 12px; margin-top: 2px; }
+.aging { display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
+.aging-row { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.aging-label { width: 90px; flex: none; color: var(--muted); }
+.aging-bar { height: 14px; background: var(--accent); border-radius: 4px; min-width: 2px; }
+.aging-count { color: var(--muted); }
+.tag { display: inline-block; font-size: 11px; background: var(--panel2); border: 1px solid var(--line);
+  border-radius: 999px; padding: 2px 8px; margin-right: 4px; color: var(--muted); }
+
+/* detail fields */
+.fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px 18px; margin-bottom: 16px; }
+.field { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--line); padding: 5px 0; }
+.field .k { color: var(--muted); } .field .v { text-align: right; }
+.detail-panel { margin-top: 16px; border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+.detail-panel h3 { margin-top: 0; }
+.detail-panel .close { float: right; background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 16px; }
+h3 { margin: 18px 0 8px; }
+
 .chat { flex: 1; max-width: 820px; width: 100%; margin: 0 auto; padding: 20px 16px 20px; }
 .empty { color: var(--muted); text-align: center; margin-top: 40px; }
 .msg { margin: 18px 0; }

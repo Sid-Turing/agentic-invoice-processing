@@ -59,6 +59,11 @@ class Settings:
     vendor_match_threshold: float = field(default_factory=lambda: _float("VENDOR_MATCH_THRESHOLD", 0.70))
     tax_discrepancy_tolerance: float = field(default_factory=lambda: _float("TAX_DISCREPANCY_TOLERANCE", 0.25))
 
+    # Reporting (feature 002)
+    high_value_threshold: float = field(default_factory=lambda: _float("HIGH_VALUE_THRESHOLD", 3000.0))
+    default_page_size: int = field(default_factory=lambda: int(os.getenv("DEFAULT_PAGE_SIZE", "25")))
+    max_page_size: int = field(default_factory=lambda: int(os.getenv("MAX_PAGE_SIZE", "100")))
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
