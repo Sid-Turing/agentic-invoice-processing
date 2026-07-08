@@ -12,6 +12,7 @@ INVOICE_EXTRACTION_PROMPT = """\
 Extract information from this INVOICE image into the structured schema. Focus on accuracy.
 Rules:
 - If a value is not present, use null (0 for amounts only when the document shows 0).
+- Normalize currency to a 3-letter ISO code; treat a "$" symbol as "USD".
 - Dates must be YYYY-MM-DD.
 - Line-item tax_rate: if shown as a percentage (e.g. "10%"), convert to a decimal (0.10).
 - Parse the vendor and customer blocks into their address components when possible.
@@ -66,7 +67,7 @@ WORKFLOW for a processing turn (an invoice is present in this turn or an earlier
    - Else: skip reconciliation. Record the reason: "no PO number" (invoice lacks one) or "PO not found" (lookup returned nothing).
 3. Run invoice-internal checks, building one Check per item (status pass/fail/skipped, detail, compared values):
    - mandatory_fields: invoice_number, invoice_date, subtotal, total_amount, currency, vendor name + address present.
-   - currency: currency in [{currencies}] (else fail).
+   - currency: currency in [{currencies}] (else fail). Treat a "$" symbol as USD.
    - line_item_math: for each line, quantity*unit_price ≈ total_price within {s.line_tolerance}. Use calculate.
    - sales_tax: expected = subtotal*{s.tax_rate}; compare to stated tax within {s.tax_discrepancy_tolerance}. If tax inputs are missing, mark skipped (not fail).
    - financial_totals: line totals sum to subtotal; subtotal+tax+shipping-discount ≈ total_amount within {s.total_tolerance}. Use calculate.
