@@ -35,7 +35,17 @@ fake agent via the `AGENT_FACTORY` seam; the DB schema is built on in-memory SQL
 via portable ORM types (or a real Postgres via `TEST_DATABASE_URL`).
 
 <!-- SPECKIT START -->
-Active feature plan (this branch): `specs/001-agentic-invoice-strands/plan.md`.
+Active feature plan (this branch): `specs/002-read-reporting/plan.md` — a READ-ONLY
+reporting surface over 001's data: six GET endpoints (`/invoices`, `/invoices/{id}`,
+`/summary`, `/purchase-orders(/{no})`, `/vendors`) in a new `backend/app/api/reports.py`
+(+ `services/reporting_service.py` pure logic + `db/read_repository.py`), and React
+screens (history list, invoice detail, dashboard w/ aging+priority, PO/vendor browsers)
+behind a `react-router-dom` nav shell. No new tables/migration, no writes (SEC-002),
+no raw-file viewer (SEC-003); per-run grain; vendor/amount/aging/priority derived in
+Python from the `extracted_invoice` JSON (R1). Read `research.md` + `data-model.md` +
+`contracts/read-endpoints.md` before touching the read path.
+
+Prior feature: `specs/001-agentic-invoice-strands/plan.md`.
 Read the plan plus `research.md` (R1 single-agent-+-tools topology, R2 OpenAI/Gemini
 provider split, R3 image-routing-to-the-extraction-tool, R5 per-conversation agent
 registry are the cruxes), `data-model.md` (Pydantic domain schemas + the SQLite ORM
