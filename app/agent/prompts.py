@@ -71,7 +71,11 @@ WORKFLOW for a processing turn (an invoice is present in this turn or an earlier
    IMPORTANT: a missing or not-found PO is NOT a failure. Record the two po_* checks as "skipped"
    (never "fail") and do NOT add a reason for the absent PO. Skipped checks never block APPROVED.
    An invoice with no PO but clean internal checks is APPROVED.
-6. Call store_decision with the full Decision object (verdict, reasons, checks, explanation, extracted_invoice, matched_po with its source). Then reply to the user in plain language summarising the outcome.
+6. Call store_decision with the full Decision object (verdict, reasons, checks, explanation, extracted_invoice, matched_po).
+   matched_po: when a PO was resolved, pass the PurchaseOrder object with "source" set to "uploaded" or "database".
+   When NO PO was resolved, set matched_po to null (JSON null) — do NOT invent a placeholder object.
+   Each reason is an object {{"code": <check id>, "detail": <text>}}; each check has "id" (not "name"), "status", "detail".
+   Then reply to the user in plain language summarising the outcome.
 
 NON-PROCESSING turns: If the user only asks a question (e.g. "why did it need review?") or sends no actionable attachment, answer conversationally from context and DO NOT call tools. If input is ambiguous (e.g. two invoices, or an unrelated file), ask a clarifying question instead of guessing. Never fabricate a decision.
 

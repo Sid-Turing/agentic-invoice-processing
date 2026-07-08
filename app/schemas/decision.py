@@ -67,3 +67,25 @@ class Decision(BaseModel):
     extracted_invoice: ExtractedInvoice
     matched_po: PurchaseOrder | None = None
     record_id: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _normalize_matched_po(cls, data):
+        """Tolerate the model's no-PO variants: a null, a placeholder object, or a
+        PO nested under 'purchase_order'. Anything without a real po_number → None."""
+        if not isinstance(data, dict) or "matched_po" not in data:
+            return data
+        mp = data["matched_po"]
+        if mp is None:
+            return data
+        if not isinstance(mp, dict):
+            data["matched_po"] = None
+            return data
+        po = mp.get("purchase_order") if isinstance(mp.get("purchase_order"), dict) else mp
+        if not isinstance(po, dict) or not po.get("po_number"):
+            data["matched_po"] = None
+            return data
+        src = mp.get("source") or po.get("source")
+        po = {**po, "source": src if src in ("uploaded", "database") else "database"}
+        data["matched_po"] = po
+        return data
