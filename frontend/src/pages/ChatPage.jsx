@@ -9,7 +9,7 @@ function AgentTurn({ turn }) {
       <div className="flow">
         {(turn.flow || []).map((item, i) => {
           if (item.type === 'tool') {
-            return <div key={i} className="step"><span className="dot">🔧</span> called <b>{item.name}</b></div>
+            return <div key={i} className="step"><span className="dot material-symbols-outlined">build</span> called <b>{item.name}</b></div>
           }
           if (item.type === 'result') {
             return (
@@ -80,51 +80,86 @@ export default function ChatPage() {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onSubmit(e) }
   }
 
+  const isEmpty = messages.length === 0 && !streaming
+
   return (
     <>
       <header className="page-header">
         Chat
-        <small>upload an invoice (and optional PO) — watch the agent extract, validate, reconcile, decide</small>
+        <small>Upload an invoice (and optional PO) — watch the agent extract, validate, reconcile, decide.</small>
       </header>
 
       <main className="chat">
-        {messages.length === 0 && !streaming && (
-          <div className="empty">Attach an invoice and hit Send, or ask a question.</div>
-        )}
-        {messages.map((m, i) =>
-          m.role === 'user' ? (
-            <div key={i} className="msg user">
-              <div className="role">You</div>
-              {m.text ? <div className="bubble">{m.text}</div> : null}
-              {m.attachments?.length ? <div className="attach">📎 {m.attachments.join(', ')}</div> : null}
+        {isEmpty ? (
+          <div className="empty-hero">
+            <div className="hero-icon"><span className="material-symbols-outlined">upload_file</span></div>
+            <h3>Awaiting Documents</h3>
+            <p>Attach an invoice and hit Send, or ask a question. The agent extracts, validates, and reconciles in seconds.</p>
+            <div className="quick-actions">
+              <div className="qa-card">
+                <span className="material-symbols-outlined">bolt</span>
+                <div className="qa-title">Auto-extract data</div>
+                <div className="qa-sub">Process header and line items instantly.</div>
+              </div>
+              <div className="qa-card">
+                <span className="material-symbols-outlined">rebase_edit</span>
+                <div className="qa-title">Reconcile with PO</div>
+                <div className="qa-sub">Check for variance and matching errors.</div>
+              </div>
             </div>
-          ) : (
-            <AgentTurn key={i} turn={m} />
-          )
+          </div>
+        ) : (
+          <>
+            {messages.map((m, i) =>
+              m.role === 'user' ? (
+                <div key={i} className="msg user">
+                  <div className="role">You</div>
+                  {m.text ? <div className="bubble">{m.text}</div> : null}
+                  {m.attachments?.length ? <div className="attach">📎 {m.attachments.join(', ')}</div> : null}
+                </div>
+              ) : (
+                <AgentTurn key={i} turn={m} />
+              )
+            )}
+            {streaming && liveRef.current && <AgentTurn turn={liveRef.current} />}
+          </>
         )}
-        {streaming && liveRef.current && <AgentTurn turn={liveRef.current} />}
         <div ref={endRef} />
       </main>
 
-      <form className="composer" onSubmit={onSubmit}>
-        <div className="files">
-          <label>📄 Invoice: <span className="fname">{invoice?.name || 'none'}</span>
-            <input type="file" accept=".pdf,.png,.jpg,.jpeg"
-                   onChange={(e) => setInvoice(e.target.files[0] || null)} />
-          </label>
-          <label>📎 PO (optional): <span className="fname">{po?.name || 'none'}</span>
-            <input type="file" accept=".pdf,.png,.jpg,.jpeg"
-                   onChange={(e) => setPo(e.target.files[0] || null)} />
-          </label>
-        </div>
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={onKeyDown}
-          placeholder="Ask something, or attach an invoice and hit Send…"
-        />
-        <button type="submit" disabled={streaming}>{streaming ? '…' : 'Send'}</button>
-      </form>
+      <div className="composer">
+        <form className="composer-inner" onSubmit={onSubmit}>
+          <div className="status-row">
+            <label className="status-item">
+              <span className="material-symbols-outlined">description</span>
+              Invoice: <span className="fname">{invoice?.name || 'none'}</span>
+              <input type="file" accept=".pdf,.png,.jpg,.jpeg" onChange={(e) => setInvoice(e.target.files[0] || null)} />
+            </label>
+            <label className="status-item">
+              <span className="material-symbols-outlined">attachment</span>
+              PO (optional): <span className="fname">{po?.name || 'none'}</span>
+              <input type="file" accept=".pdf,.png,.jpg,.jpeg" onChange={(e) => setPo(e.target.files[0] || null)} />
+            </label>
+          </div>
+
+          <div className="chatbox">
+            <textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={onKeyDown}
+              placeholder="Ask something, or attach an invoice and hit Send…"
+              rows={1}
+            />
+            <div className="chatbox-actions">
+              <button type="submit" className="send-btn" disabled={streaming}>
+                {streaming ? '…' : <>Send <span className="material-symbols-outlined">send</span></>}
+              </button>
+            </div>
+          </div>
+
+          <p className="composer-note">Powered by Enterprise Finance AI. Confidential data is encrypted and secure.</p>
+        </form>
+      </div>
     </>
   )
 }

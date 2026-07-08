@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom'
 import Sidebar from './components/Sidebar.jsx'
+import TopBar from './components/TopBar.jsx'
 import ChatPage from './pages/ChatPage.jsx'
 import HistoryPage from './pages/HistoryPage.jsx'
 import InvoiceDetailPage from './pages/InvoiceDetailPage.jsx'
@@ -12,6 +13,7 @@ export default function App() {
     <div className="app-shell">
       <Sidebar />
       <div className="content">
+        <TopBar />
         <Routes>
           <Route path="/" element={<ChatPage />} />
           <Route path="/history" element={<HistoryPage />} />
