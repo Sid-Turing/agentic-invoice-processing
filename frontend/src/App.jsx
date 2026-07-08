@@ -7,7 +7,7 @@ function AgentTurn({ turn }) {
     <div className="msg agent">
       <div className="role">Agent</div>
       <div className="flow">
-        {turn.flow.map((item, i) => {
+        {(turn.flow || []).map((item, i) => {
           if (item.type === 'tool') {
             return <div key={i} className="step"><span className="dot">🔧</span> called <b>{item.name}</b></div>
           }
@@ -68,8 +68,9 @@ export default function App() {
       onDecision: (d) => { liveRef.current.decision = d; tick() },
       onError: (d) => { liveRef.current.flow.push({ type: 'text', text: '⚠ ' + (d?.detail || 'error') }); tick() },
       onDone: () => {
-        setMessages((m) => [...m, { role: 'agent', ...liveRef.current }])
+        const finished = liveRef.current || { flow: [], decision: null }
         liveRef.current = null
+        setMessages((m) => [...m, { role: 'agent', flow: finished.flow, decision: finished.decision }])
         setStreaming(false)
       },
     })
