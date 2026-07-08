@@ -1,0 +1,44 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: invoice
+      POSTGRES_PASSWORD: invoice
+      POSTGRES_DB: invoices
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U invoice -d invoices"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg2://invoice:invoice@db:5432/invoices
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OPENAI_MODEL_ID: ${OPENAI_MODEL_ID:-gpt-5.5-2026-04-23}
+      GEMINI_MODEL_ID: ${GEMINI_MODEL_ID:-gemini-2.5-flash}
+    ports:
+      - "8010:8010"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Browser talks to the backend on the host-published port.
+        VITE_API_BASE: ${VITE_API_BASE:-http://localhost:8010}
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+
+volumes:
+  pgdata:

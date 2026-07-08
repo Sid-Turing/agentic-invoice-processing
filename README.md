@@ -11,7 +11,19 @@ frontend/   React (Vite) chat UI calling the backend's POST /chat
 specs/      Spec-Kit artifacts (spec, plan, research, data-model, contracts, tasks)
 ```
 
-## Backend
+## Run with Docker (all three services)
+
+```bash
+# provide model keys (or put them in a .env next to docker-compose.yml)
+export OPENAI_API_KEY=sk-...  GEMINI_API_KEY=...
+docker compose up --build
+```
+
+- Postgres → `localhost:5434`, backend → `http://localhost:8010`, frontend → `http://localhost:5173`.
+- The backend image runs `alembic upgrade head` on start (creates the schema), then seeds the PO reference data.
+- Each service also has its own `Dockerfile` (`backend/Dockerfile`, `frontend/Dockerfile`) if you prefer to build/run them individually. The frontend bakes `VITE_API_BASE` at build time (build arg, default `http://localhost:8010`).
+
+## Backend (local, without Docker)
 
 ```bash
 cd backend
