@@ -4,7 +4,9 @@ A standalone, single-user backend service that reworks the legacy multi-service
 invoice pipeline into one **Strands Agents** flow behind a ChatGPT-style
 multimodal chat API. Python 3.11+, FastAPI, SQLAlchemy 2.0 + **PostgreSQL**
 (schema created from scratch via **Alembic**; connection from `DATABASE_URL`,
-swappable). No frontend, no email service, no auth.
+swappable). No email service, no auth. **Backend API only** — the web UI is a
+separate React (Vite) repo `agentic-invoice-frontend` that calls the non-streaming
+`POST /chat` (CORS enabled). There is no built-in UI and no SSE streaming endpoint.
 
 Core shape: one **Orchestrator agent** (OpenAI model) with five tools —
 `extract_document` (Gemini vision, structured output), `lookup_purchase_order`

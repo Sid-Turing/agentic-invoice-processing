@@ -12,7 +12,9 @@ the result, and replies with a decision.
   by the agent's reasoning, not hardcoded steps.
 - **PostgreSQL** via SQLAlchemy 2.0; schema created from scratch with **Alembic**;
   connection from `DATABASE_URL` (swappable).
-- No email service, no frontend, no auth.
+- No email service, no auth. This repo is the **backend API only**; the web UI is a
+  separate React app in the sibling repo `agentic-invoice-frontend`, which calls the
+  non-streaming `POST /chat` endpoint (CORS is enabled for local dev).
 
 See `specs/001-agentic-invoice-strands/` for the full spec, plan, and contracts.
 
