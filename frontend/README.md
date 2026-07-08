@@ -1,42 +1,35 @@
-# Agentic Invoice Frontend
+# Frontend — Agentic Invoice Processing
 
-A minimal ChatGPT-style React (Vite) UI for the **agentic-invoice-processing**
-backend. Upload an invoice (and optionally a PO), and see the agent's reply plus a
-structured decision card (verdict, reasons, per-check trace). Uses the backend's
-non-streaming `POST /chat` endpoint.
+React + Vite UI for the backend. A collapsible sidebar, a top bar, and these routes:
 
-## Prerequisites
-
-- Node 18+
-- The backend running (see the `agentic-invoice-processing` repo). By default this
-  app calls `http://localhost:8010`.
+- **Chat** (`/`) — upload invoice/PO, stream the agent's steps (tool calls, results,
+  narration) live via `POST /chat/stream`, with a decision card and a live dashboard
+  rail alongside.
+- **History** (`/history`) — processed-invoice list (filter/search/paginate) → **detail** (`/invoices/:id`).
+- **Dashboard** (`/dashboard`) — summary, aging, priority.
+- **Purchase Orders** (`/purchase-orders`), **Vendors** (`/vendors`) — reference browsers.
 
 ## Setup
 
 ```bash
 npm install
-cp .env.example .env        # optional — set VITE_API_BASE if the backend isn't on :8010
 npm run dev                 # http://localhost:5173
+npm run build               # production build (nginx-served in Docker)
 ```
 
 ## Configuration
 
-- `VITE_API_BASE` — backend base URL (default `http://localhost:8010`). The backend
-  enables permissive CORS for local development.
+- `VITE_API_BASE` — backend base URL (default `http://localhost:8010`). Set in `.env`
+  for dev, or as a Docker build arg (baked into the bundle at build time).
 
-## Build
-
-```bash
-npm run build && npm run preview
-```
-
-## Structure
+## Layout
 
 ```
 src/
-  main.jsx                  # React entry
-  App.jsx                   # chat state + composer (files + message), multi-turn conversation_id
-  api.js                    # sendMessage() -> POST /chat (multipart)
-  components/DecisionCard.jsx  # verdict pill + reasons + per-check trace
+  App.jsx                     shell: Sidebar + TopBar + routed pages
+  api.js                      streamMessage() (SSE) + read helpers (getInvoices, getSummary, …)
+  components/                 Sidebar, TopBar, DashboardRail, DecisionCard, LineItemsTable
+  pages/                      ChatPage, HistoryPage, InvoiceDetailPage, DashboardPage,
+                              PurchaseOrdersPage, VendorsPage
   styles.css
 ```

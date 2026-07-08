@@ -1,57 +1,75 @@
 # Agentic Invoice Processing
 
-A monorepo for an agentic invoice-processing tool: a Strands-based agent behind a
-chat API, with a React web UI. Upload an invoice (and optionally a purchase order);
-the agent extracts, validates, reconciles against the PO, and returns an
-`APPROVED` / `NEEDS_REVIEW` decision.
+A Strands agent (OpenAI orchestrator + Gemini vision) behind a chat API, with a
+React UI. Upload an invoice (and optionally a PO); the agent extracts it, resolves
+the PO (uploaded or from the DB), validates and reconciles, persists the result,
+and replies **APPROVED** / **NEEDS_REVIEW**. A read layer adds history, a
+dashboard, and PO/vendor browsers.
 
 ```
-backend/    FastAPI + Strands agent, SQLAlchemy/PostgreSQL (Alembic), tests
-frontend/   React (Vite) chat UI calling the backend's POST /chat
-specs/      Spec-Kit artifacts (spec, plan, research, data-model, contracts, tasks)
+backend/    FastAPI + SQLAlchemy/PostgreSQL (Alembic) — agent, tools, read APIs, tests
+frontend/   React + Vite — chat (with live dashboard rail), history, dashboard, PO/vendors
+specs/      Spec-Kit artifacts (spec, plan, tasks) for each feature
 ```
 
-## Run with Docker (all three services)
+## The agent
+
+One **orchestrator agent** (OpenAI model) runs each chat turn: it reasons over the
+message, decides which tools to call, and performs the validation and invoice↔PO
+reconciliation itself (not hardcoded steps). It uses **5 tools**:
+
+| Tool | Purpose |
+|---|---|
+| `extract_document` | read an uploaded invoice/PO into structured data (Gemini vision) |
+| `lookup_purchase_order` | fetch a PO (+ vendor, line items) from the DB by number |
+| `store_purchase_order` | persist an uploaded PO (upsert by number) |
+| `store_decision` | persist the final decision (verdict, reasons, check trace) |
+| `calculate` | exact arithmetic for line-item / tax / total checks |
+
+## Quick start (Docker)
 
 ```bash
-# provide model keys (or put them in a .env next to docker-compose.yml)
-export OPENAI_API_KEY=sk-...  GEMINI_API_KEY=...
+export OPENAI_API_KEY=sk-...  GEMINI_API_KEY=...   # or put them in a .env beside docker-compose.yml
 docker compose up --build
 ```
 
-- Postgres → `localhost:5434`, backend → `http://localhost:8010`, frontend → `http://localhost:5173`.
-- The backend image runs `alembic upgrade head` on start (creates the schema), then seeds the PO reference data.
-- Each service also has its own `Dockerfile` (`backend/Dockerfile`, `frontend/Dockerfile`) if you prefer to build/run them individually. The frontend bakes `VITE_API_BASE` at build time (build arg, default `http://localhost:8010`).
+Frontend → http://localhost:5173 · backend → http://localhost:8010 · Postgres → `:5434`.
+The backend container runs `alembic upgrade head` (creates the schema) then seeds PO
+reference data on boot.
 
-## Backend (local, without Docker)
+## Local dev
 
+Requires **poppler** for PDF rendering (`brew install poppler` / `apt-get install poppler-utils`).
+
+**Backend**
 ```bash
 cd backend
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
-cp .env.example .env                 # set OPENAI_API_KEY, GEMINI_API_KEY, DATABASE_URL
-
-# Postgres (local Docker) + schema
+cp .env.example .env            # OPENAI_API_KEY, GEMINI_API_KEY, DATABASE_URL
 docker run -d --name aip-pg -e POSTGRES_USER=invoice -e POSTGRES_PASSWORD=invoice \
   -e POSTGRES_DB=invoices -p 5434:5432 postgres:16
-alembic upgrade head                 # creates the 4 tables
-
-uvicorn app.main:app --port 8010     # seeds PO reference data on startup
-pytest                               # 36 tests, ~90% coverage
+alembic upgrade head            # create tables
+uvicorn app.main:app --port 8010
+pytest
 ```
 
-Endpoints: `POST /chat` (multipart: `message`, optional `conversation_id`,
-`invoice`, `po`) → natural-language reply + structured decision; `GET /health`.
-CORS is enabled for the local frontend.
-
-## Frontend
-
+**Frontend**
 ```bash
 cd frontend
 npm install
-cp .env.example .env                 # optional: VITE_API_BASE (default http://localhost:8010)
-npm run dev                          # http://localhost:5173
+npm run dev                     # http://localhost:5173 (VITE_API_BASE defaults to :8010)
 ```
 
-See `backend/README.md` and `frontend/README.md` for details, and
-`specs/001-agentic-invoice-strands/` for the full design.
+## API
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /chat` | multipart (`message`, optional `conversation_id`, `invoice`, `po`) → reply + structured decision |
+| `POST /chat/stream` | same inputs, streamed as SSE (`tool` / `tool_result` / `token` / `decision`) |
+| `GET /health` | liveness + provider/DB status |
+| `GET /invoices`, `/invoices/{id}` | processed-invoice history + detail |
+| `GET /summary` | dashboard metrics (counts, aging, priority) |
+| `GET /purchase-orders`, `/purchase-orders/{no}`, `/vendors` | reference data |
+
+See `backend/README.md` and `frontend/README.md` for details, `specs/` for design.
