@@ -178,8 +178,10 @@ tr.row-flag td { color: var(--warning); }
 .aging-list { display: flex; flex-direction: column; gap: 14px; }
 .aging-row { display: flex; align-items: center; gap: 16px; font-size: 13px; }
 .aging-label { width: 96px; flex: none; color: var(--muted); }
-.aging-track { flex: 1; height: 12px; background: var(--subtle-2); border-radius: var(--radius-pill); overflow: hidden; }
-.aging-fill { height: 100%; background: var(--accent); border-radius: var(--radius-pill); min-width: 0; transition: width .3s; }
+.aging-track { display: block; flex: 1; height: 12px; background: var(--subtle-2);
+  border-radius: var(--radius-pill); overflow: hidden; }
+.aging-fill { display: block; height: 100%; background: var(--accent);
+  border-radius: var(--radius-pill); transition: width .3s; }
 .aging-count { width: 34px; flex: none; text-align: right; color: var(--text); font-weight: 500; }
 
 /* reason / status tags */
