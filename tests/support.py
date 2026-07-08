@@ -234,14 +234,6 @@ class FakeAgent:
         result = store_decision(decision)
         return f"{verdict}. Recorded as {result['record_id']}."
 
-    async def stream_async(self, prompt: str):
-        """Emit a couple of tool events + a token, then run the same processing so
-        pop_decision is populated (mirrors Strands' stream_async event shape)."""
-        if conversation.get_attachment("invoice_1") is not None:
-            yield {"current_tool_use": {"toolUseId": "t1", "name": "extract_document", "input": {"document_type": "invoice"}}}
-        text = await self.invoke_async(prompt)
-        yield {"data": text}
-
 
 def install_fake_agent(monkeypatch, extraction_map: dict):
     """Wire the AGENT_FACTORY seam and stub vision extraction with canned models.

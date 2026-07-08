@@ -1,21 +1,17 @@
-"""FastAPI application entry point.
+"""FastAPI application entry point (backend API only — the UI is a separate repo).
 
 Schema is created out-of-band by `alembic upgrade head`. On startup we seed the
-reference tables (skip-if-exists). If the DB is unreachable at startup we log and
-continue — /health will report it.
+reference tables (skip-if-exists).
 """
 from __future__ import annotations
 
 import logging
 from contextlib import asynccontextmanager
-from pathlib import Path
 
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import chat, health
-
-_STATIC = Path(__file__).resolve().parent / "static"
 from app.config import get_settings
 from app.db.database import session_scope
 from app.db.seed import seed_reference_data
@@ -37,10 +33,14 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Agentic Invoice Processing", lifespan=lifespan)
+
+# Local single-user tool: allow the separate frontend dev server to call the API.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(health.router)
 app.include_router(chat.router)
-
-
-@app.get("/", response_class=HTMLResponse)
-def ui() -> str:
-    return (_STATIC / "index.html").read_text()
