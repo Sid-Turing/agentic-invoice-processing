@@ -20,7 +20,7 @@ export default function DashboardPage() {
   if (error) return <><header className="page-header">Dashboard</header><div className="page-body"><div className="error-state">⚠ {error} <button onClick={load}>Retry</button></div></div></>
   if (!s) return <><header className="page-header">Dashboard</header><div className="page-body muted">Loading…</div></>
 
-  const maxAging = Math.max(1, ...s.aging.map((b) => b.count))
+  const AGING_MAX = 100  // fixed scale: bar width = count% (clamped)
 
   return (
     <>
@@ -41,7 +41,7 @@ export default function DashboardPage() {
               <div className="aging-row" key={b.bucket}>
                 <span className="aging-label">{BUCKET_LABEL[b.bucket]}</span>
                 <span className="aging-track">
-                  <span className="aging-fill" style={{ width: `${(b.count / maxAging) * 100}%` }} />
+                  <span className="aging-fill" style={{ width: `${Math.min(100, (b.count / AGING_MAX) * 100)}%` }} />
                 </span>
                 <span className="aging-count">{b.count}</span>
               </div>
