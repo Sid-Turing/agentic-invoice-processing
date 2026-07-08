@@ -3,13 +3,15 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.schemas.invoice import ExtractedInvoice
 from app.schemas.purchase_order import PurchaseOrder
 
-# Fixed reason-code / check taxonomy (FR-014/016).
-CheckId = Literal[
+# Canonical reason-code / check taxonomy (FR-014/016). Documented as the intended
+# set and used in the prompt; the schema accepts any string so a slightly-off id
+# from the model does not block the whole decision (it is surfaced as-is).
+CANONICAL_CHECK_IDS = (
     "mandatory_fields",
     "currency",
     "line_item_math",
@@ -18,23 +20,43 @@ CheckId = Literal[
     "po_vendor_match",
     "po_line_items_match",
     "extraction_quality",
-]
+)
 
 Verdict = Literal["APPROVED", "NEEDS_REVIEW"]
 
 
 class Check(BaseModel):
-    id: CheckId
+    id: str
     status: Literal["pass", "fail", "skipped"]
     detail: str = ""
     compared: dict | None = None
     confidence: float | None = None
     rationale: str | None = None
 
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce(cls, v):
+        if isinstance(v, dict) and "id" not in v and "name" in v:
+            v = {**v, "id": v["name"]}
+        return v
+
 
 class ReasonCode(BaseModel):
-    code: CheckId
+    code: str
     detail: str = ""
+
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce(cls, v):
+        # Accept a bare string, or a dict keyed by code/id/name/reason/type.
+        if isinstance(v, str):
+            return {"code": v}
+        if isinstance(v, dict) and "code" not in v:
+            for k in ("id", "name", "reason", "type"):
+                if k in v:
+                    return {**v, "code": v[k]}
+            return {**v, "code": "unspecified"}
+        return v
 
 
 class Decision(BaseModel):

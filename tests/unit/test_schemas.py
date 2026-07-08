@@ -19,6 +19,15 @@ def test_verdict_needs_review_on_any_fail():
     assert verdict_from_checks(checks) == "NEEDS_REVIEW"
 
 
+def test_check_and_reason_coercions():
+    from app.schemas.decision import Check, ReasonCode
+
+    assert Check.model_validate({"name": "currency", "status": "pass"}).id == "currency"
+    assert ReasonCode.model_validate("financial_totals").code == "financial_totals"
+    assert ReasonCode.model_validate({"id": "sales_tax"}).code == "sales_tax"
+    assert ReasonCode.model_validate({"detail": "x"}).code == "unspecified"
+
+
 def test_decision_roundtrip():
     d = Decision(verdict="APPROVED", extracted_invoice=ExtractedInvoice(invoice_number="INV-9"))
     dumped = d.model_dump()

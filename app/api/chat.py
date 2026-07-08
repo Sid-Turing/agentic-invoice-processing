@@ -101,15 +101,39 @@ async def chat_stream(
         entry = conversation.get_or_create(turn.conversation_id)
         yield _sse("meta", {"conversation_id": turn.conversation_id})
         seen_tools: set[str] = set()
+        seen_results: set[str] = set()
+        tool_names: dict[str, str] = {}
         try:
             async with entry.lock:
                 async for event in entry.agent.stream_async(turn.prompt):
-                    tool = event.get("current_tool_use") if isinstance(event, dict) else None
-                    if tool and tool.get("toolUseId") and tool["toolUseId"] not in seen_tools:
-                        seen_tools.add(tool["toolUseId"])
-                        yield _sse("tool", {"name": tool.get("name"), "input": tool.get("input")})
-                    elif isinstance(event, dict) and event.get("data"):
+                    if not isinstance(event, dict):
+                        continue
+                    tool = event.get("current_tool_use")
+                    if tool and tool.get("toolUseId"):
+                        tid = tool["toolUseId"]
+                        if tool.get("name"):
+                            tool_names[tid] = tool["name"]
+                        if tid not in seen_tools:
+                            seen_tools.add(tid)
+                            yield _sse("tool", {"name": tool.get("name")})
+                    if event.get("data"):
                         yield _sse("token", {"text": event["data"]})
+                    msg = event.get("message")
+                    if isinstance(msg, dict):
+                        for block in msg.get("content") or []:
+                            tr = block.get("toolResult") if isinstance(block, dict) else None
+                            if not tr or tr.get("toolUseId") in seen_results:
+                                continue
+                            seen_results.add(tr["toolUseId"])
+                            text = "".join(
+                                c.get("text", "") for c in (tr.get("content") or []) if isinstance(c, dict)
+                            )
+                            if len(text) > 600:
+                                text = text[:600] + "…"
+                            yield _sse(
+                                "tool_result",
+                                {"name": tool_names.get(tr["toolUseId"]), "status": tr.get("status"), "output": text},
+                            )
         except Exception as exc:
             yield _sse("error", {"detail": f"transient processing failure: {exc}"})
             return
