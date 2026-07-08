@@ -20,8 +20,12 @@ export default function TopBar() {
         <span className="crumb">{label}</span>
       </div>
       <div className="topbar-actions">
-        <button className="icon-btn" title="Notifications"><span className="material-symbols-outlined">notifications</span></button>
+        <button className="icon-btn" title="Notifications">
+          <span className="material-symbols-outlined">notifications</span>
+          <span className="dot" />
+        </button>
         <button className="icon-btn" title="Help"><span className="material-symbols-outlined">help</span></button>
+        <div className="avatar-sm">AT</div>
       </div>
     </header>
   )

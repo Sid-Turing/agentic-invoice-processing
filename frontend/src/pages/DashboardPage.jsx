@@ -24,7 +24,7 @@ export default function DashboardPage() {
 
   return (
     <>
-      <header className="page-header">Dashboard <small>processing summary & analytics</small></header>
+      <header className="page-header">Dashboard <small>processing summary &amp; analytics</small></header>
       <div className="page-body">
         <div className="stats">
           <Stat label="Processed" value={s.total_processed} />
@@ -34,36 +34,42 @@ export default function DashboardPage() {
           <Stat label="Processed today" value={s.processed_today} />
         </div>
 
-        <h3>Aging</h3>
-        <div className="aging">
-          {s.aging.map((b) => (
-            <div className="aging-row" key={b.bucket}>
-              <span className="aging-label">{BUCKET_LABEL[b.bucket]}</span>
-              <span className="aging-bar" style={{ width: `${(b.count / maxAging) * 100}%` }} />
-              <span className="aging-count">{b.count}</span>
-            </div>
-          ))}
-        </div>
+        <section className="panel">
+          <div className="panel-head"><h3>Aging</h3></div>
+          <div className="panel-body aging-list">
+            {s.aging.map((b) => (
+              <div className="aging-row" key={b.bucket}>
+                <span className="aging-label">{BUCKET_LABEL[b.bucket]}</span>
+                <span className="aging-track">
+                  <span className="aging-fill" style={{ width: `${(b.count / maxAging) * 100}%` }} />
+                </span>
+                <span className="aging-count">{b.count}</span>
+              </div>
+            ))}
+          </div>
+        </section>
 
-        <h3>Priority ({s.priority.length})</h3>
-        {s.priority.length === 0 ? (
-          <div className="empty">Nothing high-value and overdue.</div>
-        ) : (
-          <table className="grid">
-            <thead><tr><th>Invoice #</th><th>Vendor</th><th>Amount</th><th>Due</th><th>Why</th></tr></thead>
-            <tbody>
-              {s.priority.map((p) => (
-                <tr key={p.record_id}>
-                  <td>{p.invoice_number || '—'}</td>
-                  <td>{p.vendor_name || '—'}</td>
-                  <td>{p.currency || ''} {p.total_amount?.toLocaleString()}</td>
-                  <td>{p.due_date || '—'}</td>
-                  <td>{p.reasons.map((r) => <span key={r} className="tag">{r.replace('_', ' ')}</span>)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <section className="panel">
+          <div className="panel-head"><h3>Priority ({s.priority.length})</h3></div>
+          {s.priority.length === 0 ? (
+            <div className="panel-body empty">Nothing high-value and overdue.</div>
+          ) : (
+            <table className="grid grid-flush">
+              <thead><tr><th>Invoice #</th><th>Vendor</th><th>Amount</th><th>Due</th><th>Why</th></tr></thead>
+              <tbody>
+                {s.priority.map((p) => (
+                  <tr key={p.record_id}>
+                    <td>{p.invoice_number || '—'}</td>
+                    <td>{p.vendor_name || '—'}</td>
+                    <td>{p.currency || ''} {p.total_amount?.toLocaleString()}</td>
+                    <td>{p.due_date || '—'}</td>
+                    <td>{p.reasons.map((r) => <span key={r} className={`tag tag-${r}`}>{r.replace('_', ' ')}</span>)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
       </div>
     </>
   )

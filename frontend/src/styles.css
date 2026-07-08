@@ -99,9 +99,13 @@ a { color: var(--accent); }
 .crumbs .sep { color: var(--line); }
 .crumbs .crumb { color: var(--text-2); font-size: 13px; }
 .topbar-actions { display: flex; align-items: center; gap: 6px; }
-.icon-btn { background: none; border: 0; color: var(--muted); width: 38px; height: 38px; border-radius: 50%;
+.icon-btn { position: relative; background: none; border: 0; color: var(--muted); width: 38px; height: 38px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background .15s, color .15s; }
 .icon-btn:hover { background: var(--subtle); color: var(--accent); }
+.icon-btn .dot { position: absolute; top: 7px; right: 8px; width: 8px; height: 8px; background: var(--danger);
+  border: 2px solid var(--bg); border-radius: 50%; }
+.topbar .avatar-sm { width: 32px; height: 32px; border-radius: 50%; background: var(--accent-2); color: var(--on-accent);
+  display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; margin-left: 6px; }
 
 /* ---------------- page header + body ---------------- */
 .page-header { flex: none; padding: 26px 32px 14px; font-size: 24px; font-weight: 600; letter-spacing: -0.01em; }
@@ -141,7 +145,8 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 table.grid { width: 100%; border-collapse: collapse; font-size: 14px;
   background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; }
 table.grid th { text-align: left; color: var(--muted); font-weight: 600; font-size: 11px;
-  text-transform: uppercase; letter-spacing: .05em; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  text-transform: uppercase; letter-spacing: .05em; padding: 12px 16px; border-bottom: 1px solid var(--line);
+  background: var(--subtle); }
 table.grid td { padding: 12px 16px; border-bottom: 1px solid var(--line); }
 table.grid tbody tr:last-child td { border-bottom: 0; }
 tr.row-link { cursor: pointer; }
@@ -153,20 +158,36 @@ tr.row-flag td { color: var(--warning); }
   border-radius: var(--radius); padding: 12px 14px; display: flex; gap: 12px; align-items: center; }
 
 /* ---------------- stat cards / aging / tags ---------------- */
-.stats { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 22px; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 14px; margin-bottom: 24px; }
 .stat { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card); padding: 18px 22px; min-width: 150px; }
-.stat-value { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; }
-.stat-label { color: var(--muted); font-size: 12px; margin-top: 4px; }
-.aging { display: flex; flex-direction: column; gap: 8px; margin-bottom: 22px; background: var(--panel);
-  border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 18px; box-shadow: var(--shadow-card); }
-.aging-row { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  box-shadow: var(--shadow-card); padding: 20px 22px; display: flex; flex-direction: column; gap: 6px;
+  transition: box-shadow .2s, transform .2s; }
+.stat:hover { box-shadow: var(--shadow-soft); transform: translateY(-2px); }
+.stat-value { font-size: 32px; line-height: 1.1; font-weight: 600; letter-spacing: -0.02em; }
+.stat-label { color: var(--muted); font-size: 13px; font-weight: 500; }
+
+/* section cards */
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card); overflow: hidden; margin-bottom: 24px; }
+.panel-head { padding: 18px 20px; border-bottom: 1px solid var(--line); }
+.panel-head h3 { margin: 0; }
+.panel-body { padding: 20px; }
+.grid-flush { border: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
+
+/* aging track + fill */
+.aging-list { display: flex; flex-direction: column; gap: 14px; }
+.aging-row { display: flex; align-items: center; gap: 16px; font-size: 13px; }
 .aging-label { width: 96px; flex: none; color: var(--muted); }
-.aging-bar { height: 14px; background: var(--accent); border-radius: 4px; min-width: 2px; }
-.aging-count { color: var(--muted); }
-.tag { display: inline-block; font-size: 11px; font-weight: 500; background: var(--accent-soft);
-  border: 1px solid var(--line); color: var(--accent); border-radius: var(--radius-pill);
-  padding: 2px 10px; margin-right: 5px; text-transform: capitalize; }
+.aging-track { flex: 1; height: 12px; background: var(--subtle-2); border-radius: var(--radius-pill); overflow: hidden; }
+.aging-fill { height: 100%; background: var(--accent); border-radius: var(--radius-pill); min-width: 0; transition: width .3s; }
+.aging-count { width: 34px; flex: none; text-align: right; color: var(--text); font-weight: 500; }
+
+/* reason / status tags */
+.tag { display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+  background: var(--accent-soft); border: 1px solid var(--accent-soft); color: var(--accent);
+  border-radius: var(--radius-sm); padding: 3px 8px; margin-right: 6px; }
+.tag.tag-overdue { background: var(--danger-bg); border-color: var(--danger-bd); color: var(--danger); }
+.tag.tag-due_soon { background: var(--warning-bg); border-color: var(--warning-bd); color: var(--warning); }
 
 /* ---------------- detail fields ---------------- */
 .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 6px 22px;
