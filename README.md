@@ -14,9 +14,27 @@ specs/      Spec-Kit artifacts (spec, plan, tasks) for each feature
 
 ## The agent
 
-One **orchestrator agent** (OpenAI model) runs each chat turn: it reasons over the
-message, decides which tools to call, and performs the validation and invoice↔PO
-reconciliation itself (not hardcoded steps). It uses **5 tools**:
+One **orchestrator agent** drives every chat turn — it reasons over the message,
+decides which tools to call, and does the validation and invoice↔PO reconciliation
+itself (not a hardcoded pipeline). Two providers: **OpenAI** for the orchestrator's
+reasoning, **Gemini** for document vision (inside the extraction tool).
+
+**What a turn does**
+
+1. Extract the invoice → structured data (`extract_document`).
+2. Resolve the PO: if a PO was uploaded → extract it and `store_purchase_order`;
+   else if the invoice has a PO number → `lookup_purchase_order`; else skip reconciliation.
+3. Validate the invoice — mandatory fields, currency, line-item math, sales tax,
+   financial totals (numbers via `calculate`).
+4. If a PO is resolved, reconcile vendor + line items within tolerances.
+5. Assemble the verdict and `store_decision` once, then reply.
+
+Verdict is **APPROVED** only if every applicable check passes; any failure →
+**NEEDS_REVIEW** with reason codes. A missing/​unresolved PO is a *skipped* check,
+not a failure. Each turn is persisted per-run to `processed_invoices` (verdict,
+reason codes, per-check trace, extracted invoice, matched PO).
+
+**Tools (5)**
 
 | Tool | Purpose |
 |---|---|
@@ -25,6 +43,10 @@ reconciliation itself (not hardcoded steps). It uses **5 tools**:
 | `store_purchase_order` | persist an uploaded PO (upsert by number) |
 | `store_decision` | persist the final decision (verdict, reasons, check trace) |
 | `calculate` | exact arithmetic for line-item / tax / total checks |
+
+Validation and reconciliation are the agent's own reasoning — deliberately **not**
+tools — so the flow stays adaptive. `/chat/stream` surfaces the whole sequence live
+(`tool` → `tool_result` → narration `token` → `decision`).
 
 ## Quick start (Docker)
 
