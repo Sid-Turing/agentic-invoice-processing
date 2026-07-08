@@ -132,12 +132,12 @@ export default function ChatPage() {
           <div className="status-row">
             <label className={'status-item' + (invoice ? ' has-file' : '')}>
               <span className="material-symbols-outlined">upload_file</span>
-              Upload Invoice: <span className="fname">{invoice?.name || 'none'}</span>
+              {invoice ? <>Invoice: <span className="fname">{invoice.name}</span></> : 'Upload Invoice'}
               <input type="file" accept=".pdf,.png,.jpg,.jpeg" onChange={(e) => setInvoice(e.target.files[0] || null)} />
             </label>
             <label className={'status-item' + (po ? ' has-file' : '')}>
               <span className="material-symbols-outlined">attach_file</span>
-              Upload PO (optional): <span className="fname">{po?.name || 'none'}</span>
+              {po ? <>PO: <span className="fname">{po.name}</span></> : 'Upload PO (optional)'}
               <input type="file" accept=".pdf,.png,.jpg,.jpeg" onChange={(e) => setPo(e.target.files[0] || null)} />
             </label>
           </div>
