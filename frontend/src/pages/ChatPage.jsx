@@ -86,14 +86,12 @@ export default function ChatPage() {
   const isEmpty = messages.length === 0 && !streaming
 
   return (
-    <>
+    <div className="chat-split">
+      <div className="chat-col">
       <header className="page-header">
         Chat
         <small>Upload an invoice (and optional PO) — watch the agent extract, validate, reconcile, decide.</small>
       </header>
-
-      <div className="chat-split">
-        <div className="chat-col">
       <main className="chat">
         {isEmpty ? (
           <div className="empty-hero">
@@ -167,7 +165,6 @@ export default function ChatPage() {
       </div>
         </div>
         <DashboardRail refreshKey={railKey} />
-      </div>
-    </>
+    </div>
   )
 }
