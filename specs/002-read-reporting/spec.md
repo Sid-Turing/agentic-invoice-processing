@@ -21,6 +21,12 @@ It is strictly **read-only** — it reports on data produced by feature 001 and 
 seeded reference data; it never mutates anything. It reuses the same monorepo
 (backend API + React frontend).
 
+## Clarifications
+
+### Session 2026-07-08
+
+- Q: Reporting grain — per processing-run vs per-invoice? → A: Per run (decision log). Each `processed_invoices` record is its own row; counts, aging, and total-approved sum over all records. The same invoice reprocessed N times shows N rows.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Browse processed-invoice history and open a decision (Priority: P1)
@@ -123,13 +129,13 @@ the vendor list and confirm vendors show name, address, and tax id.
 
 ### Functional Requirements
 
-- **FR-001**: The system MUST list processed invoices, newest-first, each row showing at least: invoice number, vendor name, total amount, currency, verdict (`APPROVED` / `NEEDS_REVIEW`), matched-PO source (or none), and processed timestamp.
+- **FR-001**: The system MUST list processed invoices at **per-run grain** — one row per `processed_invoices` record (a reprocessed invoice appears once per run) — newest-first, each row showing at least: invoice number, vendor name, total amount, currency, verdict (`APPROVED` / `NEEDS_REVIEW`), matched-PO source (or none), and processed timestamp.
 - **FR-002**: The history list MUST support pagination so the full set is never loaded at once, and MUST report the total count for the current filter.
 - **FR-003**: The history list MUST support filtering by verdict and by processed-time window (e.g. today, last 7/30 days, all time).
 - **FR-004**: The history list MUST support text search matching invoice number, vendor name, or PO number.
 - **FR-005**: The system MUST provide a detail view for a single processed-invoice record, showing the verdict, blocking reason codes, the full check-by-check trace (each check's id, status pass/fail/skipped, and detail), the extracted invoice (header fields, amounts, tax, line items, vendor, customer), and the matched purchase order with its source when reconciliation ran.
 - **FR-006**: Requesting the detail of a non-existent record MUST return a clear not-found result, not a server error.
-- **FR-007**: The system MUST provide summary metrics over all processed invoices: total processed, approved count, needs-review count, total approved amount, and count processed today.
+- **FR-007**: The system MUST provide summary metrics computed over all processed-invoice **records** (per-run grain, no de-duplication): total processed, approved count, needs-review count, total approved amount (sum of total amount across approved records), and count processed today.
 - **FR-008**: The system MUST provide an aging breakdown of processed invoices by due date into buckets: overdue, due today, due in 1–7 days, 8–14 days, 15+ days, and undated (missing due date).
 - **FR-009**: The system MUST provide a priority list of processed invoices that are high value (above a configurable amount threshold, default 3000) AND overdue or due within 7 days, each labeled with the reason(s): high value, overdue, due soon.
 - **FR-010**: The system MUST provide a purchase-order list (PO number, vendor, total, currency, dates), searchable by PO number and paginated, and a PO detail view including its line items.
