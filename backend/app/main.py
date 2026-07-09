@@ -29,7 +29,16 @@ async def lifespan(app: FastAPI):
             logger.info("seeded reference data: %s", counts)
     except Exception as exc:  # DB not migrated/reachable yet — surfaced via /health
         logger.warning("startup seeding skipped: %s", exc)
+
+    if settings.mcp_tools_url:
+        from app.agent import mcp_tools
+        try:
+            mcp_tools.get_remote_tools()  # warm the connection; validates the server
+        except Exception as exc:
+            logger.warning("MCP tools warm-up failed (%s); will use in-process tools", exc)
     yield
+    from app.agent import mcp_tools
+    mcp_tools.shutdown()
 
 
 app = FastAPI(title="Agentic Invoice Processing", lifespan=lifespan)

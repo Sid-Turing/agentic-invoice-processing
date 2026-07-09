@@ -15,17 +15,32 @@ services:
       timeout: 3s
       retries: 20
 
+  tools-mcp:
+    build: ./tools-mcp
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg2://invoice:invoice@db:5432/invoices
+      PORT: 8080
+    ports:
+      - "9001:8080"
+
   backend:
     build: ./backend
     depends_on:
       db:
         condition: service_healthy
+      tools-mcp:
+        condition: service_started
     environment:
       DATABASE_URL: postgresql+psycopg2://invoice:invoice@db:5432/invoices
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       OPENAI_MODEL_ID: ${OPENAI_MODEL_ID:-gpt-5.5-2026-04-23}
       GEMINI_MODEL_ID: ${GEMINI_MODEL_ID:-gemini-3.5-flash}
+      # Point the agent at the external MCP tools server. Unset -> all tools run in-process.
+      MCP_TOOLS_URL: ${MCP_TOOLS_URL:-http://tools-mcp:8080/mcp}
     ports:
       - "8010:8010"
 

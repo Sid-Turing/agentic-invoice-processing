@@ -31,6 +31,9 @@ class Settings:
     openai_model_id: str = field(default_factory=lambda: os.getenv("OPENAI_MODEL_ID", "gpt-5.5-2026-04-23"))
     gemini_model_id: str = field(default_factory=lambda: os.getenv("GEMINI_MODEL_ID", "gemini-3.5-flash"))
 
+    # External MCP tools server (empty = run all tools in-process)
+    mcp_tools_url: str = field(default_factory=lambda: os.getenv("MCP_TOOLS_URL", ""))
+
     # Database (swappable via env)
     database_url: str = field(
         default_factory=lambda: os.getenv(
