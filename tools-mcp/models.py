@@ -4,7 +4,9 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Numeric, String
+from sqlalchemy import (
+    JSON, Boolean, DateTime, ForeignKey, Integer, LargeBinary, Numeric, String, Text,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -78,3 +80,28 @@ class PoLineItem(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now)
     purchase_order: Mapped[PurchaseOrder] = relationship(back_populates="line_items")
+
+
+class Upload(Base):
+    __tablename__ = "uploads"
+    attachment_id: Mapped[str] = mapped_column(String, primary_key=True)
+    conversation_id: Mapped[str | None] = mapped_column(String, index=True, nullable=True)
+    mime: Mapped[str | None] = mapped_column(String, nullable=True)
+    data: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+class ProcessedInvoice(Base):
+    __tablename__ = "processed_invoices"
+    record_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    conversation_id: Mapped[str | None] = mapped_column(String, index=True, nullable=True)
+    invoice_number: Mapped[str | None] = mapped_column(String, index=True, nullable=True)
+    verdict: Mapped[str] = mapped_column(String, nullable=False)
+    reason_codes: Mapped[list] = mapped_column(JSON, default=list)
+    checks: Mapped[list] = mapped_column(JSON, default=list)
+    explanation: Mapped[str | None] = mapped_column(Text, nullable=True)
+    extracted_invoice: Mapped[dict] = mapped_column(JSON, default=dict)
+    matched_po_number: Mapped[str | None] = mapped_column(String, nullable=True)
+    matched_po_source: Mapped[str | None] = mapped_column(String, nullable=True)
+    matched_po: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)

@@ -121,6 +121,47 @@ def upsert_purchase_order(session: Session, po: PurchaseOrder) -> str:
     return row.po_number
 
 
+def save_upload(session: Session, attachment_id: str, conversation_id: str | None, mime: str | None, data: bytes) -> None:
+    """Store an uploaded file's bytes so a remote extraction tool can read them."""
+    row = session.get(models.Upload, attachment_id)
+    if row is None:
+        row = models.Upload(attachment_id=attachment_id)
+        session.add(row)
+    row.conversation_id = conversation_id
+    row.mime = mime
+    row.data = data
+    session.flush()
+
+
+def delete_conversation_uploads(session: Session, conversation_id: str) -> None:
+    for row in session.scalars(
+        select(models.Upload).where(models.Upload.conversation_id == conversation_id)
+    ):
+        session.delete(row)
+    session.flush()
+
+
+def get_latest_decision(session: Session, conversation_id: str) -> Decision | None:
+    """Read back the most recent persisted decision for a conversation (used when
+    store_decision ran on a remote MCP server, so there is no in-process stash)."""
+    row = session.scalar(
+        select(models.ProcessedInvoice)
+        .where(models.ProcessedInvoice.conversation_id == conversation_id)
+        .order_by(models.ProcessedInvoice.created_at.desc())
+    )
+    if row is None:
+        return None
+    return Decision.model_validate({
+        "verdict": row.verdict,
+        "reasons": row.reason_codes or [],
+        "checks": row.checks or [],
+        "explanation": row.explanation or "",
+        "extracted_invoice": row.extracted_invoice or {},
+        "matched_po": row.matched_po,
+        "record_id": row.record_id,
+    })
+
+
 def persist_decision(session: Session, decision: Decision, conversation_id: str | None) -> str:
     """Insert one processed_invoices row. Returns the record_id."""
     record_id = str(uuid.uuid4())

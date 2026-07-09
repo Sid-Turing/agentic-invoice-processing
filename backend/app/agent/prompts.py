@@ -35,7 +35,7 @@ Rules:
 # --------------------------------------------------------------------------- #
 
 
-def orchestrator_system_prompt() -> str:
+def orchestrator_system_prompt(conversation_id: str = "") -> str:
     s = get_settings()
     currencies = ", ".join(s.supported_currencies)
     return f"""\
@@ -47,10 +47,10 @@ Tools available:
 - extract_document(attachment_id, document_type): read an uploaded invoice or purchase_order into structured data (vision).
 - lookup_purchase_order(po_number): fetch a PO (vendor + line items) from the database.
 - store_purchase_order(purchase_order): persist an uploaded, extracted PO (upsert by PO number).
-- store_decision(decision): persist the final decision. Call this EXACTLY ONCE at the end of a processing turn.
+- store_decision(decision, conversation_id): persist the final decision. Call this EXACTLY ONCE at the end of a processing turn, and pass conversation_id="{conversation_id}".
 - calculate(expression): exact arithmetic.
 
-The user message lists any uploaded files under "Attachments:" with their ids and types.
+This conversation's id is "{conversation_id}". The user message lists any uploaded files under "Attachments:" with their ids and types.
 
 NARRATE AS YOU GO: before each tool call (or a group of closely related calculate calls),
 first write ONE short plain-text sentence saying what you are about to do and why — e.g.

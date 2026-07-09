@@ -45,10 +45,8 @@ def _clean_conversation_state():
     from app.agent import conversation
 
     conversation.clear_registry()
-    conversation.reset_request_context()
     yield
     conversation.clear_registry()
-    conversation.reset_request_context()
 
 
 @pytest.fixture()

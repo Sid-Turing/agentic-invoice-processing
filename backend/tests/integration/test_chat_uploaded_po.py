@@ -1,7 +1,8 @@
 """US1: single-turn processing with an uploaded PO (extract -> upsert -> reconcile)."""
 from fastapi.testclient import TestClient
 
-from app.agent.tools.po_lookup import lookup_purchase_order
+from app.db.database import session_scope
+from app.db.repository import get_purchase_order_by_number
 from app.main import app
 from tests import support
 
@@ -26,6 +27,6 @@ def test_uploaded_po_is_extracted_persisted_and_used(monkeypatch):
     assert d["verdict"] == "APPROVED", d["reasons"]
 
     # PO is now retrievable from the database.
-    found = lookup_purchase_order("PO-NEW-1")
-    assert found["found"] is True
-    assert found["purchase_order"]["vendor"]["name"] == "TechCore Solutions LLC"
+    with session_scope() as s:
+        po = get_purchase_order_by_number(s, "PO-NEW-1")
+    assert po is not None and po.vendor.name == "TechCore Solutions LLC"

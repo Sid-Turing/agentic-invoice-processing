@@ -7,12 +7,15 @@ Tools: calculate, lookup_purchase_order, store_purchase_order.
 from __future__ import annotations
 
 import os
+from typing import Literal
 
 from mcp.server.fastmcp import FastMCP
 
 import calc
+import extraction
 import repo
 from db import session_scope
+from schemas import Decision
 
 mcp = FastMCP(
     "invoice-tools",
@@ -55,6 +58,41 @@ def store_purchase_order(purchase_order: dict) -> dict:
     with session_scope() as s:
         po_number = repo.upsert_purchase_order(s, purchase_order)
     return {"stored": True, "po_number": po_number}
+
+
+@mcp.tool()
+def extract_document(attachment_id: str, document_type: Literal["invoice", "purchase_order"]) -> dict:
+    """Extract structured data from an uploaded document image/PDF using the vision model.
+
+    Args:
+        attachment_id: Id of the uploaded file (from the message's Attachments list).
+        document_type: Whether to extract an 'invoice' or a 'purchase_order'.
+    """
+    with session_scope() as s:
+        data, mime = repo.get_upload(s, attachment_id)
+    if data is None:
+        return {"error": f"no attachment with id '{attachment_id}'", "kind": "missing"}
+    try:
+        result = extraction.extract(data, mime, document_type)
+    except ValueError as exc:
+        return {"error": str(exc), "kind": "unreadable"}
+    except Exception as exc:  # provider error
+        return {"error": str(exc), "kind": "provider"}
+    return result.model_dump()
+
+
+@mcp.tool()
+def store_decision(decision: dict, conversation_id: str | None = None) -> dict:
+    """Persist the final invoice decision. Call exactly once at the end of a processing turn.
+
+    Args:
+        decision: A Decision object (verdict, reasons, checks, explanation, extracted_invoice, matched_po).
+        conversation_id: The conversation id from the system prompt.
+    """
+    model = Decision.model_validate(decision)
+    with session_scope() as s:
+        record_id = repo.persist_decision(s, model.model_dump(), conversation_id)
+    return {"record_id": record_id}
 
 
 if __name__ == "__main__":

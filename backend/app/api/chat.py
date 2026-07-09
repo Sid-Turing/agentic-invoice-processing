@@ -1,4 +1,9 @@
-"""Chat endpoints: POST /chat (complete JSON) and POST /chat/stream (SSE)."""
+"""Chat endpoints: POST /chat (complete JSON) and POST /chat/stream (SSE).
+
+Tools run on the external MCP server. Uploaded file bytes are pushed to the DB
+`uploads` table (the remote extraction tool reads them); the decision is read back
+from the DB after the turn.
+"""
 from __future__ import annotations
 
 import json
@@ -9,8 +14,9 @@ from fastapi.responses import StreamingResponse
 
 from app.agent import conversation
 from app.config import get_settings
+from app.db.database import session_scope
+from app.db.repository import delete_conversation_uploads, get_latest_decision, save_upload
 from app.schemas.chat import ChatResponse
-from app.schemas.decision import Decision
 
 router = APIRouter()
 
@@ -51,10 +57,23 @@ async def _prepare(message, conversation_id, invoice, po) -> _Turn:
     return _Turn(conversation_id=conv_id, prompt=prompt, attachments=attachments)
 
 
-def _bind_context(turn: _Turn) -> None:
-    conversation.reset_request_context(turn.conversation_id)
-    conversation.set_attachments(turn.attachments)
-    conversation.set_current_conversation_id(turn.conversation_id)
+def _pre_turn(turn: _Turn) -> str | None:
+    """Push upload bytes to the DB so the remote extraction tool can read them, and
+    return the conversation's current latest decision id (to detect a new one)."""
+    with session_scope() as s:
+        for aid, att in turn.attachments.items():
+            save_upload(s, aid, turn.conversation_id, att.mime, att.data)
+        prev = get_latest_decision(s, turn.conversation_id)
+        return prev.record_id if prev else None
+
+
+def _resolve_decision(conversation_id: str, prev_record_id: str | None):
+    """Read the decision back from the DB (only if this turn created a new record),
+    then clean up the conversation's uploads."""
+    with session_scope() as s:
+        d = get_latest_decision(s, conversation_id)
+        delete_conversation_uploads(s, conversation_id)
+    return d if (d and d.record_id != prev_record_id) else None
 
 
 @router.post("/chat", response_model=ChatResponse)
@@ -65,7 +84,7 @@ async def chat(
     po: UploadFile | None = File(default=None),
 ) -> ChatResponse:
     turn = await _prepare(message, conversation_id, invoice, po)
-    _bind_context(turn)
+    prev = _pre_turn(turn)
     entry = conversation.get_or_create(turn.conversation_id)
     try:
         async with entry.lock:
@@ -75,8 +94,7 @@ async def chat(
     except Exception as exc:
         raise HTTPException(status_code=503, detail=f"transient processing failure: {exc}") from exc
 
-    stashed = conversation.pop_decision(turn.conversation_id)
-    decision = Decision.model_validate(stashed) if stashed else None
+    decision = _resolve_decision(turn.conversation_id, prev)
     return ChatResponse(conversation_id=turn.conversation_id, message=str(result), decision=decision)
 
 
@@ -97,7 +115,7 @@ async def chat_stream(
     turn = await _prepare(message, conversation_id, invoice, po)
 
     async def event_stream():
-        _bind_context(turn)
+        prev = _pre_turn(turn)
         entry = conversation.get_or_create(turn.conversation_id)
         yield _sse("meta", {"conversation_id": turn.conversation_id})
         seen_tools: set[str] = set()
@@ -137,8 +155,8 @@ async def chat_stream(
         except Exception as exc:
             yield _sse("error", {"detail": f"transient processing failure: {exc}"})
             return
-        stashed = conversation.pop_decision(turn.conversation_id)
-        yield _sse("decision", stashed)
+        decision = _resolve_decision(turn.conversation_id, prev)
+        yield _sse("decision", decision.model_dump() if decision else None)
         yield _sse("done", {"conversation_id": turn.conversation_id})
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")

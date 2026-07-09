@@ -6,7 +6,7 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from models import PoLineItem, PoVendor, PurchaseOrder
+from models import PoLineItem, PoVendor, ProcessedInvoice, PurchaseOrder, Upload
 
 
 def _num(v):
@@ -55,6 +55,33 @@ def get_purchase_order_by_number(session: Session, po_number: str) -> dict | Non
         ],
         "source": "database",
     }
+
+
+def get_upload(session: Session, attachment_id: str):
+    row = session.get(Upload, attachment_id)
+    return (row.data, row.mime) if row else (None, None)
+
+
+def persist_decision(session: Session, decision: dict, conversation_id: str | None) -> str:
+    import uuid as _uuid
+    inv = decision.get("extracted_invoice") or {}
+    mp = decision.get("matched_po")
+    record_id = str(_uuid.uuid4())
+    session.add(ProcessedInvoice(
+        record_id=record_id,
+        conversation_id=conversation_id,
+        invoice_number=inv.get("invoice_number"),
+        verdict=decision["verdict"],
+        reason_codes=decision.get("reasons") or [],
+        checks=decision.get("checks") or [],
+        explanation=decision.get("explanation") or "",
+        extracted_invoice=inv,
+        matched_po_number=(mp or {}).get("po_number") if mp else None,
+        matched_po_source=(mp or {}).get("source") if mp else None,
+        matched_po=mp,
+    ))
+    session.flush()
+    return record_id
 
 
 def _resolve_or_create_vendor(session: Session, vendor: dict) -> PoVendor:

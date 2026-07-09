@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, LargeBinary, Numeric, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -101,4 +101,16 @@ class ProcessedInvoice(Base):
     matched_po_number: Mapped[str | None] = mapped_column(String, nullable=True)
     matched_po_source: Mapped[str | None] = mapped_column(String, nullable=True)
     matched_po: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+class Upload(Base):
+    """Transient blob channel so a remote extraction tool can read an uploaded file's
+    bytes. Written before a turn, deleted after it (raw files are not retained)."""
+    __tablename__ = "uploads"
+
+    attachment_id: Mapped[str] = mapped_column(String, primary_key=True)
+    conversation_id: Mapped[str | None] = mapped_column(String, index=True, nullable=True)
+    mime: Mapped[str | None] = mapped_column(String, nullable=True)
+    data: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
