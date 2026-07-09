@@ -33,9 +33,12 @@ async def lifespan(app: FastAPI):
     if settings.mcp_tools_url:
         from app.agent import mcp_tools
         try:
-            mcp_tools.get_remote_tools()  # warm the connection; validates the server
+            mcp_tools.get_remote_tools()  # warm + validate the MCP connection
+            logger.info("MCP tools connected: %s", settings.mcp_tools_url)
         except Exception as exc:
-            logger.warning("MCP tools warm-up failed (%s); will use in-process tools", exc)
+            # No local fallback: chat turns will 503 until the MCP server is reachable.
+            logger.warning("MCP tools unreachable at %s (%s); chat will fail until it is up",
+                           settings.mcp_tools_url, exc)
     yield
     from app.agent import mcp_tools
     mcp_tools.shutdown()
