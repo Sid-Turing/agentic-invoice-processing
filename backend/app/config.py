@@ -25,13 +25,11 @@ def _float(name: str, default: float) -> float:
 
 @dataclass(frozen=True)
 class Settings:
-    # Providers
+    # Orchestrator model (OpenAI). Gemini/vision now lives in the MCP tools server.
     openai_api_key: str = field(default_factory=lambda: os.getenv("OPENAI_API_KEY", ""))
-    gemini_api_key: str = field(default_factory=lambda: os.getenv("GEMINI_API_KEY", ""))
     openai_model_id: str = field(default_factory=lambda: os.getenv("OPENAI_MODEL_ID", "gpt-5.5-2026-04-23"))
-    gemini_model_id: str = field(default_factory=lambda: os.getenv("GEMINI_MODEL_ID", "gemini-3.5-flash"))
 
-    # External MCP tools server (empty = run all tools in-process)
+    # External MCP tools server (required — the agent's tools live here)
     mcp_tools_url: str = field(default_factory=lambda: os.getenv("MCP_TOOLS_URL", ""))
 
     # Database (swappable via env)

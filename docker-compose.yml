@@ -38,10 +38,8 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg2://invoice:invoice@db:5432/invoices
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       OPENAI_MODEL_ID: ${OPENAI_MODEL_ID:-gpt-5.5-2026-04-23}
-      GEMINI_MODEL_ID: ${GEMINI_MODEL_ID:-gemini-3.5-flash}
-      # Point the agent at the external MCP tools server. Unset -> all tools run in-process.
+      # The agent's tools live on the external MCP server (required).
       MCP_TOOLS_URL: ${MCP_TOOLS_URL:-http://tools-mcp:8080/mcp}
     ports:
       - "8010:8010"

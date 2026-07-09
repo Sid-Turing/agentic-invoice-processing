@@ -24,9 +24,9 @@ def _db_ok() -> bool:
 def health() -> HealthResponse:
     settings = get_settings()
     providers = {
-        "openai": bool(settings.openai_api_key),
-        "gemini": bool(settings.gemini_api_key),
+        "openai": bool(settings.openai_api_key),   # orchestrator model
+        "mcp_tools": bool(settings.mcp_tools_url),  # external tools server configured
     }
     database = _db_ok()
-    status = "ok" if (database and providers["openai"]) else "degraded"
+    status = "ok" if (database and providers["openai"] and providers["mcp_tools"]) else "degraded"
     return HealthResponse(status=status, providers=providers, database=database)
