@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "skills": {
+    "humain-ui": {
+      "source": "/Users/hiraj.dey/Documents/TuringWork/agentic-invoice-processing/frontend/node_modules/@humain/ui",
+      "sourceType": "local",
+      "computedHash": "88a10f52e2f02a65a1250c9cb49f1326db11e6a5855bd1e25c28632e1df00fe8"
+    },
+    "humain-workflow": {
+      "source": "/Users/hiraj.dey/.npm/_npx/1dafe5dbaf967158/node_modules/@humain/workflow",
+      "sourceType": "local",
+      "computedHash": "e5eebc8452e56c4146cccc6d46811c8e05a747e4d14173ed2f3f2d9690e2f6fd"
+    }
+  }
+}

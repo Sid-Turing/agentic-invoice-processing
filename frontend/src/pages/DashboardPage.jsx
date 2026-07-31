@@ -1,76 +1,131 @@
 import { useState, useEffect } from 'react'
+import { PageHeader, DataTable, MetricCard, Progress, Badge, EmptyState } from '@humain/ui'
+import { LayoutDashboard } from 'lucide-react'
 import { getSummary } from '../api.js'
 
 const BUCKET_LABEL = {
-  overdue: 'Overdue', due_today: 'Due today', due_1_7: 'Due 1–7d',
-  due_8_14: 'Due 8–14d', due_15_plus: 'Due 15+d', undated: 'Undated',
+  overdue: 'Overdue',
+  due_today: 'Due today',
+  due_1_7: 'Due 1–7d',
+  due_8_14: 'Due 8–14d',
+  due_15_plus: 'Due 15+d',
+  undated: 'Undated',
 }
 
-function Stat({ label, value }) {
-  return <div className="stat"><div className="stat-value">{value}</div><div className="stat-label">{label}</div></div>
-}
+const dash = (v) => (v === null || v === undefined || v === '' ? '—' : v)
+
+// overdue → destructive, due_soon → warning, everything else → secondary
+const reasonVariant = (r) =>
+  r === 'overdue' ? 'destructive' : r === 'due_soon' ? 'warning' : 'secondary'
+
+const priorityColumns = [
+  { accessorKey: 'invoice_number', header: 'Invoice #', cell: ({ getValue }) => dash(getValue()) },
+  { accessorKey: 'vendor_name', header: 'Vendor', cell: ({ getValue }) => dash(getValue()) },
+  {
+    id: 'amount',
+    header: 'Amount',
+    cell: ({ row }) => {
+      const p = row.original
+      return p.total_amount != null
+        ? `${p.currency || ''} ${p.total_amount.toLocaleString()}`.trim()
+        : '—'
+    },
+  },
+  { accessorKey: 'due_date', header: 'Due', cell: ({ getValue }) => dash(getValue()) },
+  {
+    id: 'why',
+    header: 'Why',
+    cell: ({ row }) => (
+      <div className="flex flex-wrap gap-2">
+        {(row.original.reasons || []).map((r) => (
+          <Badge key={r} variant={reasonVariant(r)}>
+            {r.replace('_', ' ')}
+          </Badge>
+        ))}
+      </div>
+    ),
+  },
+]
 
 export default function DashboardPage() {
   const [s, setS] = useState(null)
   const [error, setError] = useState(null)
 
-  const load = () => { setError(null); getSummary().then(setS).catch((e) => setError(e.message)) }
-  useEffect(() => { load() }, [])
-
-  if (error) return <><header className="page-header">Dashboard</header><div className="page-body"><div className="error-state">⚠ {error} <button onClick={load}>Retry</button></div></div></>
-  if (!s) return <><header className="page-header">Dashboard</header><div className="page-body muted">Loading…</div></>
-
-  const AGING_MAX = 100  // fixed scale: bar width = count% (clamped)
+  const load = () => {
+    setError(null)
+    getSummary().then(setS).catch((e) => setError(e.message))
+  }
+  useEffect(() => {
+    load()
+  }, [])
 
   return (
-    <>
-      <header className="page-header">Dashboard <small>processing summary &amp; analytics</small></header>
-      <div className="page-body">
-        <div className="stats">
-          <Stat label="Processed" value={s.total_processed} />
-          <Stat label="Approved" value={s.approved_count} />
-          <Stat label="Needs review" value={s.needs_review_count} />
-          <Stat label="Approved amount" value={`$ ${s.total_approved_amount.toLocaleString()}`} />
-          <Stat label="Processed today" value={s.processed_today} />
-        </div>
+    <div className="flex h-full flex-col overflow-hidden">
+      <PageHeader
+        title="Dashboard"
+        supportingText="Processing summary & analytics"
+        showDivider
+        className="px-3 py-2"
+      />
 
-        <section className="panel">
-          <div className="panel-head"><h3>Aging</h3></div>
-          <div className="panel-body aging-list">
-            {s.aging.map((b) => (
-              <div className="aging-row" key={b.bucket}>
-                <span className="aging-label">{BUCKET_LABEL[b.bucket]}</span>
-                <span className="aging-track">
-                  <span className="aging-fill" style={{ width: `${Math.min(100, (b.count / AGING_MAX) * 100)}%` }} />
-                </span>
-                <span className="aging-count">{b.count}</span>
-              </div>
-            ))}
-          </div>
-        </section>
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-5">
+        {error ? (
+          <EmptyState
+            title="Couldn't load dashboard"
+            description={error}
+            media="featured-icon"
+            icon={<LayoutDashboard />}
+            primaryAction={{ label: 'Retry', onClick: load }}
+          />
+        ) : !s ? (
+          <div className="text-sm text-muted-foreground">Loading…</div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
+              <MetricCard title="Processed" value={s.total_processed} />
+              <MetricCard title="Approved" value={s.approved_count} />
+              <MetricCard title="Needs review" value={s.needs_review_count} />
+              <MetricCard
+                title="Approved amount"
+                value={s.total_approved_amount}
+                valueFormatter={(n) => `$ ${n.toLocaleString()}`}
+              />
+              <MetricCard title="Processed today" value={s.processed_today} />
+            </div>
 
-        <section className="panel">
-          <div className="panel-head"><h3>Priority ({s.priority.length})</h3></div>
-          {s.priority.length === 0 ? (
-            <div className="panel-body empty">Nothing high-value and overdue.</div>
-          ) : (
-            <table className="grid grid-flush">
-              <thead><tr><th>Invoice #</th><th>Vendor</th><th>Amount</th><th>Due</th><th>Why</th></tr></thead>
-              <tbody>
-                {s.priority.map((p) => (
-                  <tr key={p.record_id}>
-                    <td>{p.invoice_number || '—'}</td>
-                    <td>{p.vendor_name || '—'}</td>
-                    <td>{p.currency || ''} {p.total_amount?.toLocaleString()}</td>
-                    <td>{p.due_date || '—'}</td>
-                    <td>{p.reasons.map((r) => <span key={r} className={`tag tag-${r}`}>{r.replace('_', ' ')}</span>)}</td>
-                  </tr>
+            <section className="mt-6">
+              <h3 className="mb-3 text-base font-semibold">Aging</h3>
+              <div className="flex flex-col gap-3">
+                {s.aging.map((b) => (
+                  <div key={b.bucket} className="flex items-center gap-3">
+                    <span className="w-24 text-sm text-muted-foreground">
+                      {BUCKET_LABEL[b.bucket] || b.bucket}
+                    </span>
+                    <Progress className="flex-1" value={Math.min(100, b.count)} />
+                    <span className="w-8 text-right text-sm">{b.count}</span>
+                  </div>
                 ))}
-              </tbody>
-            </table>
-          )}
-        </section>
+              </div>
+            </section>
+
+            <section className="mt-6">
+              <h3 className="mb-3 text-base font-semibold">Priority ({s.priority.length})</h3>
+              {s.priority.length === 0 ? (
+                <div className="text-sm text-muted-foreground">
+                  Nothing high-value and overdue.
+                </div>
+              ) : (
+                <DataTable
+                  columns={priorityColumns}
+                  data={s.priority}
+                  getRowId={(p) => p.record_id}
+                  enableSorting
+                />
+              )}
+            </section>
+          </>
+        )}
       </div>
-    </>
+    </div>
   )
 }

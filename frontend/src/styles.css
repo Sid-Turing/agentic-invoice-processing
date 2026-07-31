@@ -1,5 +1,9 @@
-/* Enterprise Finance AI theme — Material-3 teal, Inter, light. */
-:root {
+/* Enterprise Finance AI theme — Material-3 teal, Inter, light.
+   NOTE: these tokens are scoped to `.legacy-content` (not `:root`) on purpose —
+   names like --muted/--accent/--ring/--radius collide with @humain/ui's design
+   tokens, and defining them at :root clobbers the whole design system on migrated
+   pages (e.g. DataTable's bg-muted turned dark grey). Keep them scoped here. */
+.legacy-content {
   --bg: #f4fafd;            /* surface / canvas + sidebar */
   --content: #ffffff;       /* main content (surface-container-lowest) */
   --panel: #ffffff;
@@ -36,17 +40,20 @@
 }
 
 * { box-sizing: border-box; }
+/* Body no longer pulls legacy tokens (now scoped to .legacy-content); let @humain/ui
+   own the global canvas/typography. Legacy pages get base type via .legacy-content below. */
 body {
-  margin: 0; background: var(--bg); color: var(--text);
-  font: 14px/1.5 var(--font-sans);
+  margin: 0;
   -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
 }
 .material-symbols-outlined {
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
   font-size: 20px; line-height: 1; vertical-align: middle; user-select: none;
 }
-h3 { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; margin: 22px 0 10px; }
-a { color: var(--accent); }
+/* Scoped to `.legacy-content`: these bare element selectors are UNLAYERED and would
+   otherwise override @humain/ui's @layer-utilities component styles on migrated pages. */
+.legacy-content h3 { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; margin: 22px 0 10px; }
+.legacy-content a { color: var(--accent); }
 
 /* ---------------- shell ---------------- */
 .app-shell { display: flex; min-height: 100vh; }
@@ -91,6 +98,13 @@ a { color: var(--accent); }
 .content { margin-left: var(--sidebar-w); flex: 1; min-width: 0; height: 100vh; overflow: hidden;
   background: var(--content); display: flex; flex-direction: column; transition: margin-left .2s ease; }
 
+/* Migration shim: routed pages live inside @humain/ui AppShell.Panel and still use
+   the legacy full-bleed layout. This gives them the old `.content` column context
+   (full height, white surface, own scroll) minus the fixed-sidebar margin. */
+.legacy-content { height: 100%; min-height: 0; flex: 1; min-width: 0; overflow: hidden;
+  background: var(--content); display: flex; flex-direction: column;
+  color: var(--text); font: 14px/1.5 var(--font-sans); }
+
 /* collapsed (compact) sidebar */
 .app-shell.collapsed .sidebar { width: 68px; }
 .app-shell.collapsed .content { margin-left: 68px; }
@@ -131,7 +145,7 @@ a { color: var(--accent); }
 .explanation { color: var(--text-2); background: var(--subtle); border-radius: var(--radius); padding: 12px 14px; }
 
 /* ---------------- buttons / controls ---------------- */
-button { font: inherit; cursor: pointer; }
+.legacy-content button { font: inherit; cursor: pointer; }
 .btn, button.btn { background: var(--accent); color: var(--on-accent); border: 1px solid var(--accent);
   border-radius: var(--radius); padding: 9px 16px; font-size: 13px; font-weight: 500;
   display: inline-flex; align-items: center; gap: 8px; transition: background .15s, box-shadow .15s, transform .05s; }
@@ -141,12 +155,12 @@ button { font: inherit; cursor: pointer; }
 .btn-secondary { background: var(--panel); color: var(--text); border: 1px solid var(--line); }
 .btn-secondary:hover { background: var(--subtle); border-color: var(--muted); }
 
-input, select, textarea {
+.legacy-content input, .legacy-content select, .legacy-content textarea {
   background: var(--panel); color: var(--text); border: 1px solid var(--line);
   border-radius: var(--radius); padding: 9px 12px; font: inherit; font-size: 13px;
 }
-input::placeholder, textarea::placeholder { color: var(--muted); }
-input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
+.legacy-content input::placeholder, .legacy-content textarea::placeholder { color: var(--muted); }
+.legacy-content input:focus, .legacy-content select:focus, .legacy-content textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
 
 .toolbar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
 .toolbar input { flex: 1; min-width: 220px; }
