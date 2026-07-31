@@ -1,0 +1,109 @@
+/* Project-level overrides for @humain/ui components.
+   Kept separate from the legacy styles.css (which is removed once migration ends).
+
+   AppSidebar width/padding: AppSidebar does not expose width props. The expanded
+   width follows the --sidebar-width var on the sidebar element, but the COLLAPSED
+   rail width is driven by the AppShell sidebar wrapper's own sizing (not the
+   --sidebar-width-icon var), so it must be forced directly. */
+[data-slot='sidebar-wrapper'],
+[data-slot='sidebar'] {
+  --sidebar-width: 250px !important;      /* expanded: 250px (was 280px) */
+  --sidebar-width-icon: 70px !important;
+}
+
+/* Width is driven by the AppShell sidebar wrapper's own sizing (not --sidebar-width*),
+   so force exact widths per state directly. */
+[data-slot='app-shell-sidebar']:has([data-slot='sidebar'][data-state='collapsed']) {
+  width: 70px !important;
+  min-width: 70px !important;
+  max-width: 70px !important;
+}
+[data-slot='app-shell-sidebar']:has([data-slot='sidebar'][data-state='expanded']) {
+  width: 250px !important;
+  min-width: 250px !important;
+  max-width: 250px !important;
+}
+
+/* Chat: AIContainer ships a translucent white surface; make it transparent so it
+   blends with the page canvas. */
+[data-slot='ai-container'] {
+  background: transparent !important;
+}
+
+/* Dashboard rail resize handle: sits over the left border of the rail; shows a
+   col-resize cursor and a primary accent line on hover/drag. */
+.dashboard-resize-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -8px;
+  width: 16px;
+  z-index: 10;
+  cursor: col-resize;
+  touch-action: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* accent line down the divider on hover/drag */
+.dashboard-resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  background: transparent;
+  transition: background 0.15s ease;
+}
+.dashboard-resize-handle:hover::after,
+.dashboard-resize-handle:active::after {
+  background: var(--primary);
+}
+/* grab tab with the grip icon, centered on the divider */
+.dashboard-resize-grip {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  width: 15px;
+  border-radius: 9999px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--muted-foreground);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.dashboard-resize-handle:hover .dashboard-resize-grip,
+.dashboard-resize-handle:active .dashboard-resize-grip {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+/* Chat composer "input dock": focus ring on the whole dock + hover on upload chips
+   (focus-within / hover utilities aren't in the prebuilt @humain/ui CSS). */
+.chat-composer:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
+}
+.chat-upload:hover {
+  background: var(--muted);
+}
+
+/* Chat empty-state feature cards: subtle hover (hover: utilities aren't in the
+   prebuilt @humain/ui CSS, so define the hover here). */
+.chat-feature-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+}
+
+/* Tighten the inner padding of the sidebar surface (was 24px / 24px / 16px), and
+   keep the sidebar background color when collapsed (AppSidebar defaults the surface
+   to bg-transparent when collapsed; force the --sidebar token in both states). */
+[data-slot='app-sidebar-surface'] {
+  padding: 12px 8px !important;
+  background-color: var(--sidebar) !important;
+}
