@@ -94,7 +94,7 @@ export default function PurchaseOrdersPage() {
         className="px-3 py-2"
       />
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-5">
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-5 pr-5">
         <div className="mb-4 flex items-center gap-2">
           <Input
             className="max-w-md flex-1"

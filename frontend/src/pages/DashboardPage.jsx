@@ -68,7 +68,7 @@ export default function DashboardPage() {
         className="px-3 py-2"
       />
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-5">
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-5 pr-5">
         {error ? (
           <EmptyState
             title="Couldn't load dashboard"
